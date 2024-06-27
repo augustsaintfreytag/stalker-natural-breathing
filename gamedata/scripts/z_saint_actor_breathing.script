@@ -214,9 +214,22 @@ function play_sound_breath(actor)
 	-- Player can breathe normally (default mode).
 	local snd_index = tick_breath_snd_index(SND_KIND.DEFAULT)
 	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
+	local snd_pause_factor = 1.35
+
+	-- Check for player fear factor and adjust breathing sound.
+	local fear_factor = calculate_fear_factor()
+
+	if fear_factor > 0.7 then
+		snd_mode = SND_DEFAULT_BREATH_MODE.FEAR
+		snd_pause_factor = 1.25
+	elseif fear_factor > 0.3 then
+		snd_mode = SND_DEFAULT_BREATH_MODE.DISTRESS
+		snd_pause_factor = 1.18
+	end
 
 	printf("Playing default breathing sound with mode " ..
 		tostring(snd_mode) .. " and index " .. tostring(snd_index) .. ".")
+
 	play_sound_breath_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, 1.35)
 end
 
