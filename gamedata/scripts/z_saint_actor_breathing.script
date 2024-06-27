@@ -56,7 +56,7 @@ local num_snds_by_kind = {
 	[SND_KIND.DEFAULT] = 8,
 	[SND_KIND.GAS_MASK] = 8,
 	[SND_KIND.HEALTH_RELATED] = 4,
-	[SND_KIND.STAMINA_RELATED] = 2
+	[SND_KIND.STAMINA_RELATED] = 6
 }
 
 function tick_breath_snd_index(kind)
