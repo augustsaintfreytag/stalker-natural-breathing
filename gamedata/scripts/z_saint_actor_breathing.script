@@ -63,6 +63,8 @@ end
 
 function init_options()
 	opt.speed = {}
+
+	local ini_eff = ini_file("plugins\\actor_effects.ltx")
 	local settings_speed = ini_eff:line_count("settings_speed")
 
 	for i = 0, settings_speed - 1 do
