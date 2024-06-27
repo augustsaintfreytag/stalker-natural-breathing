@@ -251,6 +251,95 @@ function actor_sound_volume(is_masked)
 	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
 end
 
+-- Conditions
+
+function calculate_fear_factor()
+	local is_night = get_is_night()
+	local is_underground = get_is_underground()
+	local is_in_combat = get_is_in_combat()
+	local is_surge = get_is_surge()
+	local is_in_safe_space = get_is_in_safe_space()
+	local number_of_nearby_threats = get_number_of_nearby_threats()
+
+	local fear_value = 0
+
+	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 2)
+
+	if is_in_combat then
+		fear_value = fear_value + 2
+	end
+
+	if is_night then
+		fear_value = fear_value + 1
+	end
+
+	if is_underground then
+		fear_value = fear_value + 2
+	end
+
+	if is_surge and not is_underground then
+		fear_value = fear_value + 2
+	end
+
+	if is_in_safe_space then
+		fear_value = fear_value / 2
+	end
+
+	local fear_factor = fear_value / 10
+
+	printf("Calculated aggregate player fear factor: " ..
+		tostring(fear_factor) ..
+		" (from value " ..
+		fear_value ..
+		") with factors (in combat: " ..
+		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
+		tostring(is_underground) ..
+		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
+		", nearby threats: " .. tostring(number_of_nearby_threats) .. ").")
+
+	return fear_factor
+end
+
+function get_is_surge()
+	return xr_conditions.surge_started()
+end
+
+function get_is_night()
+	return level.get_time_hours() < 3 or level.get_time_hours() > 22
+end
+
+function get_is_underground()
+	return GetEvent("underground")
+end
+
+function get_is_in_safe_space()
+	return GetEvent("current_safe_cover")
+end
+
+function get_is_in_combat()
+	if not AGDD_voiced_actor then
+		return false
+	end
+
+	return AGDD_voiced_actor.is_actor_in_combat() or false
+end
+
+function get_number_of_nearby_threats()
+	local max_radius = 50
+	local npc_list = {} -- Records of { id, name, distance (unknown) }
+
+	level.iterate_nearest(db.actor:position(), max_radius, function(obj)
+		if (IsStalker(obj) or IsMonster(obj)) and obj:alive() and obj:relation(db.actor) == game_object.enemy then
+			table.insert(npc_list, {
+				id = obj:id(),
+				name = obj:character_name()
+			})
+		end
+	end)
+
+	return #npc_list
+end
+
 -- Hook
 
 function hook_functions()
