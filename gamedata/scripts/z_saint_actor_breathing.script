@@ -27,6 +27,23 @@ local SND_KIND = {
 	STAMINA_RELATED = "run"
 }
 
+local SND_DEFAULT_BREATH_MODE = {
+	DEFAULT = "1",
+	DISTRESS = "2",
+	FEAR = "3"
+}
+
+local SND_HEALTH_BREATH_MODE = {
+	SEVERELY_WOUNDED = "1",
+	LIGHTLY_WOUNDED = "2"
+}
+
+local SND_RUN_BREATH_MODE = {
+	LIGHTLY_EXHAUSTED = "1",
+	MODERATELY_EXHAUSTED = "2",
+	SEVERELY_EXHAUSTED = "3"
+}
+
 local snd_index_by_kind = {
 	[SND_KIND.DEFAULT] = 0,
 	[SND_KIND.GAS_MASK] = 0,
@@ -157,39 +174,41 @@ function play_sound_breath(actor)
 		return
 	end
 
-	if (actor_health > opt.health.level2) then
-		-- Player is healthy, only play sounds for stamina or running.
-		if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) then
-			-- Player is running or low on stamina
-			local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED)
-			local snd_mode = math.ceil(3 * last_actor_speed_time / 44)
-
-			play_sound_breath_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.15)
-			return
-		end
-
-		-- Player is not out of stamina, reset breathing sound cycle.
-		reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
-
-		return
-	end
-
-	if (actor_health >= opt.health.level2 and actor_health > opt.health.level1) then
-		local snd_mode = 2
-		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
-
-		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, snd_mode, snd_index, 1.1)
-		return
-	end
-
 	if (actor_health <= opt.health.level1) then
 		-- Player is badly wounded, play sounds for injury.
-		local snd_mode = 1
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
+		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
+			snd_index, 1.0)
 
-		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, snd_mode, snd_index, 1.0)
 		return
 	end
+
+	if (actor_health <= opt.health.level2 and actor_health > opt.health.level1) then
+		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
+		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.LIGHTLY_WOUNDED,
+			snd_index, 1.1)
+
+		return
+	end
+
+	-- Player is healthy, only play sounds for stamina or running.
+	if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) then
+		-- Player is running or low on stamina
+		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED)
+		local snd_mode = math.ceil(3 * last_actor_speed_time / 44)
+
+		play_sound_breath_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.15)
+		return
+	end
+
+	-- Player is not out of stamina, reset breathing sound cycle.
+	reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
+
+	-- Player can breathe normally (default mode).
+	local snd_index = tick_breath_snd_index(SND_KIND.DEFAULT)
+	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
+
+	play_sound_breath_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, 1.35)
 end
 
 -- Playback
