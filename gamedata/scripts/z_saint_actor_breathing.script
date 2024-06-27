@@ -231,5 +231,6 @@ function hook_functions()
 end
 
 function on_game_start()
+	init_options()
 	hook_functions()
 end
