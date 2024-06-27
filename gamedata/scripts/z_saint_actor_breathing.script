@@ -30,8 +30,8 @@ local SND_DEFAULT_BREATH_MODE = {
 }
 
 local SND_HEALTH_BREATH_MODE = {
-	SEVERELY_WOUNDED = "1",
-	LIGHTLY_WOUNDED = "2"
+	LIGHTLY_WOUNDED = "1",
+	SEVERELY_WOUNDED = "2"
 }
 
 local SND_RUN_BREATH_MODE = {
@@ -180,7 +180,7 @@ function play_sound_breath(actor)
 		-- Player is badly wounded, play sounds for injury.
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
-			snd_index, 1.0)
+			snd_index, 1.1)
 
 		return
 	end
@@ -188,7 +188,7 @@ function play_sound_breath(actor)
 	if (actor_health <= opt.health.level2 and actor_health > opt.health.level1) then
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.LIGHTLY_WOUNDED,
-			snd_index, 1.1)
+			snd_index, 1.25)
 
 		return
 	end
@@ -196,12 +196,15 @@ function play_sound_breath(actor)
 	-- Player is healthy, only play sounds for stamina or running.
 	if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) then
 		-- Player is running or low on stamina
-		local snd_mode = math.ceil(3 * last_actor_speed_time / 44)
-		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED)
+		local snd_mode = clamp(math.ceil(3 / (3 * actor.power)), 1, 3)
+		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED) -- SND_RUN_BREATH_MODE (1–3)
 
 		printf("Playing stamina-related breathing sound with mode " ..
-			snd_mode .. " and index " .. snd_index .. " (last speed time " .. last_actor_speed_time .. ").")
-		play_sound_breath_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.2)
+			tostring(snd_mode) ..
+			" and index " ..
+			tostring(snd_index) ..
+			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
+		play_sound_breath_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.25)
 		return
 	end
 
@@ -212,7 +215,8 @@ function play_sound_breath(actor)
 	local snd_index = tick_breath_snd_index(SND_KIND.DEFAULT)
 	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
 
-	printf("Playing default breathing sound with mode " .. snd_mode .. " and index " .. snd_index .. ".")
+	printf("Playing default breathing sound with mode " ..
+		tostring(snd_mode) .. " and index " .. tostring(snd_index) .. ".")
 	play_sound_breath_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, 1.35)
 end
 
