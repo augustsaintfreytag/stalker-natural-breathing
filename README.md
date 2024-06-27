@@ -1,6 +1,6 @@
 (Artwork pending)
 
-# STALKER Air Exchange (Natural Breathing)
+# STALKER Natural Breathing
 
 A mod introducing a natural breathing sound system for STALKER Anomaly (Open X-Ray/Monolith engine). Gives your character the ability to breathe, even without a gas mask. Adapts to context and environment, with different styles of breathing for everyday exploration, combat, underground spaces, and changes to sounds made when wounded. Primarily designed for LASS (Ladies and Sister Stalkers).
 
