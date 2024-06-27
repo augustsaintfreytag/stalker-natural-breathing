@@ -5,18 +5,89 @@ local is_mask_on = actor_effects.is_mask_on
 
 -- State
 
-local snd_tg = 0
+local opt = {}
+local last_snd_time = 0
 
 local last_actor_speed = 0
 local last_actor_position = { x = 0, y = 0, z = 0 }
 local last_actor_speed_time = 0
+local last_cam_dist = 0
 
+local breath_snd = nil
+
+local default_play = 0
 local health_play = 0
-local breath_sound = 0
-local gas_play = 0
 local run_play = 0
+local gas_play = 0
 
--- Actor Tick
+local SND_KIND = {
+	DEFAULT = "default",
+	GAS_MASK = "gas_breath",
+	HEALTH_RELATED = "health",
+	STAMINA_RELATED = "run"
+}
+
+local snd_index_by_kind = {
+	[SND_KIND.DEFAULT] = 0,
+	[SND_KIND.GAS_MASK] = 0,
+	[SND_KIND.HEALTH_RELATED] = 0,
+	[SND_KIND.STAMINA_RELATED] = 0
+}
+
+local num_snds_by_kind = {
+	[SND_KIND.DEFAULT] = 10,
+	[SND_KIND.GAS_MASK] = 8,
+	[SND_KIND.HEALTH_RELATED] = 4,
+	[SND_KIND.STAMINA_RELATED] = 2
+}
+
+function tick_breath_snd_index(kind)
+	local current_index = snd_index_by_kind[kind]
+	local num_snds = num_snds_by_kind[kind]
+
+	current_index = current_index + 1
+	if current_index > num_snds then
+		current_index = 1
+	end
+
+	snd_index_by_kind[kind] = current_index
+
+	return current_index
+end
+
+function reset_breath_snd_index(kind)
+	snd_index_by_kind[kind] = 0
+end
+
+-- Init
+
+function init_options()
+	opt.speed = {}
+	local settings_speed = ini_eff:line_count("settings_speed")
+
+	for i = 0, settings_speed - 1 do
+		local _, id, value = ini_eff:r_line_ex("settings_speed", i, "", "")
+
+		if id and value then
+			opt.speed[id] = tonumber(value)
+		end
+	end
+
+	opt.health = {
+		injury_snd = nil,
+		level1 = ini_eff:r_float_ex("settings_health", "level1"),
+		level2 = ini_eff:r_float_ex("settings_health", "level2")
+	}
+
+	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
+	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
+end
+
+-- Actor Value Updates
+
+function update_actor_cam_distance(actor)
+	cam_dist = actor:bone_position("bip01_head"):distance_to_sqr(device().cam_pos)
+end
 
 function update_actor_speed(actor)
 	local current_position = actor:position()
@@ -40,11 +111,14 @@ function update_actor_speed_time(actor)
 	last_actor_speed_time = math.min(32, last_actor_speed_time + actor.bleeding * opt.speed.k_bleed)
 end
 
+-- Actor Breathing Tick
+
 function update_breathing(actor)
 	if (not opt.enable_breathing_sound) then
 		return
 	end
 
+	update_actor_cam_distance(actor)
 	update_actor_speed(actor)
 	update_actor_speed_time(actor)
 
@@ -55,66 +129,105 @@ function update_breathing(actor)
 	end
 end
 
+-- Actor Breathing (Masked)
+
 function play_sound_breath_mask(actor)
 	local tg = time_global()
-	if (tg > snd_tg) then
-		gas_play = gas_play + 1
-		if (gas_play > 8) then
-			gas_play = 1
+
+	if (tg <= last_snd_time) then
+		return
+	end
+
+	local snd_index = tick_breath_snd_index(SND_KIND.GAS_MASK)
+	local snd_mode = tostring((actor.health > 0.2) and math.ceil((1.01 - actor.power) * 3 + last_actor_speed_time / 8) or
+		8)
+
+	play_sound_breath_with_parameters(actor, SND_KIND.GAS_MASK, snd_mode, snd_index, 1.25)
+end
+
+-- Actor Breathing (Unmasked)
+
+function play_sound_breath(actor)
+	local current_time = time_global()
+	local actor_health = actor.health
+
+	if (current_time < last_snd_time) or (actor_health < 0) then
+		return
+	end
+
+	if (actor_health > opt.health.level2) then
+		-- Player is healthy, only play sounds for stamina or running.
+		if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) then
+			-- Player is running or low on stamina
+			local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED)
+			local snd_mode = math.ceil(3 * last_actor_speed_time / 44)
+
+			play_sound_breath_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.15)
+			return
 		end
-		breath_sound = sound_object("actor\\gas_breath_" ..
-			tostring((actor.health > 0.2) and math.ceil((1.01 - actor.power) * 3 + last_actor_speed_time / 8) or 8) ..
-			"_" .. gas_play)
-		snd_tg = tg + breath_sound:length() * 1.25
-		breath_sound:play(actor, 0, sound_object.s2d)
-		breath_sound.volume = (cam_dist > opt.cam_dist) and 0 or (1 - cam_dist / opt.cam_dist) * 0.5
+
+		-- Player is not out of stamina, reset breathing sound cycle.
+		reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
+
+		return
+	end
+
+	if (actor_health >= opt.health.level2 and actor_health > opt.health.level1) then
+		local snd_mode = 2
+		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
+
+		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, snd_mode, snd_index, 1.1)
+		return
+	end
+
+	if (actor_health <= opt.health.level1) then
+		-- Player is badly wounded, play sounds for injury.
+		local snd_mode = 1
+		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
+
+		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, snd_mode, snd_index, 1.0)
+		return
 	end
 end
 
-function play_sound_breath(actor)
-	local tg = time_global()
-	local health = actor.health
+-- Playback
 
-	if (tg < snd_tg) or (health < 0) then
-		return
+function play_sound_breath_with_parameters(actor, kind, mode, index, pause_factor)
+	local current_time = time_global()
+
+	last_snd_time = current_time + last_breath_snd_length() * pause_factor
+
+	breath_snd = sound_object("actor\\" .. kind .. "_" .. mode .. "_" .. index)
+	breath_snd:play(actor, 0, sound_object.s2d)
+	breath_snd.volume = actor_sound_volume()
+end
+
+function last_breath_snd_length()
+	if not breath_snd then
+		return 4000
 	end
 
-	if (health > opt.health.level2) then
-		if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) or (run_play == 1) then
-			run_play = run_play + 1
-			if (run_play > 2) then
-				run_play = 1
-			end
-			breath_sound = sound_object("actor\\run_" .. math.ceil(3 * last_actor_speed_time / 44) .. "_" .. run_play)
-			breath_sound:play(actor, 0, sound_object.s2d)
-			breath_sound.volume = (cam_dist > opt.cam_dist) and 0 or (1 - cam_dist / opt.cam_dist)
-			snd_tg = tg + breath_sound:length() * 1.15
-		else
-			run_play = 2
-		end
-		return
+	return breath_snd:length()
+end
+
+function actor_sound_volume(is_masked)
+	if last_cam_dist > opt.cam_dist then
+		return 0
 	end
 
-	if (health <= opt.health.level1) then
-		health = 1
-		if (math.random() < 0.1) then
-			health_play = 0
-		else
-			health_play = health_play + 1
-			if (health_play > 4) then
-				health_play = 1
-			end
-		end
-	else
-		health = 2
-		health_play = health_play + 1
-		if (health_play > 4) then
-			health_play = 1
-		end
-	end
+	local amplifier = (is_masked or false) and 0.5 or 1
 
-	snd_tg = tg + (opt.health.injury_snd["_" .. health .. "_" .. health_play] or 4000)
-	breath_sound = sound_object("actor\\health_" .. health .. "_" .. health_play)
-	breath_sound:play(actor, 0, sound_object.s2d)
-	breath_sound.volume = (cam_dist > opt.cam_dist) and 0 or (1 - cam_dist / opt.cam_dist)
+	return (1 - last_cam_dist / opt.cam_dist) * amplifier
+end
+
+-- Hook
+
+function hook_functions()
+	actor_effects.Update_Breathing = update_breathing
+	actor_effects.play_sound_breath_mask = play_sound_breath_mask
+	actor_effects.play_sound_breath = play_sound_breath
+end
+
+function on_game_start()
+	hook_functions()
 end
