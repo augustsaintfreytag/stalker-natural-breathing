@@ -1,0 +1,4 @@
+*			text=auto
+*.ltx		text eol=crlf working-tree-encoding=windows-1251
+*.xml		text eol=crlf working-tree-encoding=windows-1251
+*.script	text eol=crlf working-tree-encoding=windows-1251 linguist-language=LUA
