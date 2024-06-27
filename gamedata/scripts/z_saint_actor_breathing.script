@@ -16,11 +16,6 @@ local last_cam_dist = 0
 
 local breath_snd = nil
 
-local default_play = 0
-local health_play = 0
-local run_play = 0
-local gas_play = 0
-
 local SND_KIND = {
 	DEFAULT = "breath",
 	GAS_MASK = "gas_breath",
