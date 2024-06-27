@@ -88,7 +88,7 @@ end
 -- Actor Value Updates
 
 function update_actor_cam_distance(actor)
-	cam_dist = actor:bone_position("bip01_head"):distance_to_sqr(device().cam_pos)
+	last_cam_dist = actor:bone_position("bip01_head"):distance_to_sqr(device().cam_pos)
 end
 
 function update_actor_speed(actor)
