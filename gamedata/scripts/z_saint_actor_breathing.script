@@ -6,11 +6,12 @@ local is_mask_on = actor_effects.is_mask_on
 -- State
 
 local opt = {}
-local last_snd_time = 0
+local snd_cooldown_time = 0
 
 local last_actor_speed = 0
 local last_actor_position = { x = 0, y = 0, z = 0 }
 local last_actor_speed_time = 0
+local actor_speaking_cooldown_time = 0
 local last_cam_dist = 0
 
 local breath_snd = nil
@@ -100,6 +101,8 @@ function init_options()
 
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
+	opt.speaking_cooldown = 3000
+
 	opt.breathing_sound_volume = 0.8
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -153,9 +156,9 @@ end
 -- Actor Breathing (Masked)
 
 function play_sound_breath_mask(actor)
-	local tg = time_global()
+	local current_time = time_global()
 
-	if (tg <= last_snd_time) then
+	if (current_time <= snd_cooldown_time) or (current_time < actor_speaking_cooldown_time) then
 		return
 	end
 
@@ -172,7 +175,7 @@ function play_sound_breath(actor)
 	local current_time = time_global()
 	local actor_health = actor.health
 
-	if (current_time < last_snd_time) or (actor_health < 0) then
+	if (current_time < snd_cooldown_time) or (current_time < actor_speaking_cooldown_time) or (actor_health < 0) then
 		return
 	end
 
@@ -218,7 +221,7 @@ end
 function play_sound_breath_with_parameters(actor, kind, mode, index, pause_factor)
 	local current_time = time_global()
 
-	last_snd_time = current_time + last_breath_snd_length() * pause_factor
+	snd_cooldown_time = current_time + last_breath_snd_length() * pause_factor
 
 	breath_snd = sound_object("actor\\" .. kind .. "_" .. mode .. "_" .. index)
 	breath_snd:play(actor, 0, sound_object.s2d)
@@ -249,6 +252,20 @@ function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
 	actor_effects.play_sound_breath_mask = play_sound_breath_mask
 	actor_effects.play_sound_breath = play_sound_breath
+
+	if AGDD_voiced_actor then
+		local original_actor_speak = AGDD_voiced_actor.actor_speak
+		AGDD_voiced_actor.actor_speak = function(file, sound_volume, cooldown, chance, requires_squad, has_priority,
+												 ignore_conditionals, is_state)
+			original_actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority, ignore_conditionals,
+				is_state)
+			actor_speaking_cooldown_time = time_global() + opt.speaking_cooldown
+
+			if breath_snd then
+				breath_snd.volume = 0
+			end
+		end
+	end
 end
 
 function on_game_start()
