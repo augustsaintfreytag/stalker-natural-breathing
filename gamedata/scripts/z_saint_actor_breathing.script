@@ -99,6 +99,8 @@ function init_options()
 	}
 
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
+
+	opt.breathing_sound_volume = 0.8
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
 
@@ -238,7 +240,7 @@ function actor_sound_volume(is_masked)
 
 	local amplifier = (is_masked or false) and 0.5 or 1
 
-	return (1 - last_cam_dist / opt.cam_dist) * amplifier
+	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume
 end
 
 -- Hook
