@@ -96,7 +96,7 @@ function init_options()
 
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
-	opt.speaking_cooldown = 3000
+	opt.speaking_cooldown = 1000
 
 	opt.breathing_sound_volume = 0.8
 	opt.breathing_sound_volume_jitter = 0.1
@@ -362,15 +362,18 @@ function hook_functions()
 
 	if AGDD_voiced_actor then
 		local original_actor_speak = AGDD_voiced_actor.actor_speak
+
 		AGDD_voiced_actor.actor_speak = function(file, sound_volume, cooldown, chance, requires_squad, has_priority,
 												 ignore_conditionals, is_state)
-			original_actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority, ignore_conditionals,
-				is_state)
-			actor_speaking_cooldown_time = time_global() + opt.speaking_cooldown
+			printf("Voiced actor wants to plays sound, muting and suspending breathing.")
+			actor_speaking_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
 
 			if breath_snd then
 				breath_snd.volume = 0
 			end
+
+			original_actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority, ignore_conditionals,
+				is_state)
 		end
 	end
 end
