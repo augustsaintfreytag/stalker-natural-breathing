@@ -21,7 +21,7 @@ local run_play = 0
 local gas_play = 0
 
 local SND_KIND = {
-	DEFAULT = "default",
+	DEFAULT = "breath",
 	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run"
