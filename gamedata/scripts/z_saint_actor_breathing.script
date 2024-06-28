@@ -3,19 +3,7 @@
 local is_respi_on = actor_effects.is_respi_on
 local is_mask_on = actor_effects.is_mask_on
 
--- State
-
-local opt = {}
-local snd_cooldown_time = 0
-
-local last_actor_speed = 0
-local last_actor_position = { x = 0, y = 0, z = 0 }
-local last_actor_speed_time = 0
-local last_cam_dist = 0
-
-local actor_speaking_cooldown_time = 0
-
-local breath_snd = nil
+-- Types
 
 local SND_KIND = {
 	DEFAULT = "breath",
@@ -42,6 +30,20 @@ local SND_RUN_BREATH_MODE = {
 	SEVERELY_EXHAUSTED = "3"
 }
 
+-- State
+
+local opt = {}
+local snd_cooldown_time = 0
+
+local last_actor_speed = 0
+local last_actor_position = { x = 0, y = 0, z = 0 }
+local last_actor_speed_time = 0
+local last_cam_dist = 0
+
+local actor_speaking_cooldown_time = 0
+
+local breath_snd = nil
+
 local snd_index_by_kind = {
 	[SND_KIND.DEFAULT] = 0,
 	[SND_KIND.GAS_MASK] = 0,
@@ -57,6 +59,20 @@ local num_snds_by_kind = {
 	[SND_KIND.STAMINA_RELATED] = 6,
 	[SND_KIND.STAMINA_RELATED_SWEETENER] = 7
 }
+
+-- Residuality means a mode is retained for some time after the condition is no longer met.
+-- A given kind and mode are kept until the associated cooldown is hit.
+-- Can add forced state transitions where a mode always has to be cycled back up.
+
+-- Format for values: `{ mode = nil, pause_factor = 0, time = 0 }`
+local snd_residual_cooldown_by_kind = {}
+
+-- Configuration
+
+local residual_snd_kinds = { SND_KIND.HEALTH_RELATED, SND_KIND.STAMINA_RELATED }
+local voiced_actor_blacklist = { "fear", "exhausted" }
+
+-- Ticking
 
 function tick_breath_snd_index(kind)
 	local num_snds = num_snds_by_kind[kind]
@@ -94,6 +110,7 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 1000
+	opt.residuality_time = 5000
 
 	opt.breathing_sound_volume = 0.8
 	opt.breathing_sound_volume_jitter = 0.1
@@ -173,6 +190,35 @@ function play_sound_breath(actor)
 		return
 	end
 
+	-- Check residual sounds and play if found.
+	for snd_kind, snd_record in pairs(snd_residual_cooldown_by_kind) do
+		do
+			if not snd_record or not snd_record.mode then
+				goto continue
+			end
+
+			if current_time < snd_record.time then
+				local snd_index = tick_breath_snd_index(snd_kind)
+				play_sound_with_parameters(actor, snd_kind, snd_record.mode, snd_index, snd_record.pause_factor, true)
+
+				printf("Playing residual sound of kind '" ..
+					snd_kind .. "' with mode " .. snd_record.mode .. " and index " ..
+					snd_index .. " (expiration in " .. snd_record.time - current_time .. "ms).")
+			else
+				printf("Clearing residual sound of kind '" ..
+					snd_kind ..
+					"' with mode " ..
+					snd_record.mode .. " (expired since " .. current_time - snd_record.time .. "ms).")
+
+				-- Residual time window exceeded, clear record.
+				snd_residual_cooldown_by_kind[snd_kind] = nil
+			end
+
+			return
+		end
+
+		::continue::
+	end
 	if (actor_health <= opt.health.level1) then
 		-- Player is badly wounded, play sounds for injury.
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
@@ -240,13 +286,24 @@ end
 
 -- Sound Playback
 
-function play_sound_with_parameters(actor, kind, mode, index, pause_factor)
+function play_sound_with_parameters(actor, kind, mode, index, pause_factor, is_residual)
 	breath_snd = sound_object("actor\\" .. kind .. "_" .. mode .. "_" .. index)
 	breath_snd:play(actor, 0, sound_object.s2d)
 	breath_snd.volume = actor_sound_volume()
 
 	local current_time = time_global()
-	snd_cooldown_time = current_time + breath_snd:length() or 4000 * pause_factor
+	local snd_duration = breath_snd:length() or 800
+
+	snd_cooldown_time = current_time + snd_duration * pause_factor
+
+	if not is_residual and table.has_value(residual_snd_kinds, kind) then
+		printf("Adding residual sound record for kind '" .. kind .. "' with mode " .. mode .. ".")
+		snd_residual_cooldown_by_kind[kind] = {
+			mode = mode,
+			pause_factor = pause_factor,
+			time = current_time + opt.residuality_time
+		}
+	end
 end
 
 function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
