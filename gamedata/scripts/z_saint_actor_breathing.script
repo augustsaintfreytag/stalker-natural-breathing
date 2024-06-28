@@ -420,8 +420,7 @@ function get_number_of_nearby_threats()
 	level.iterate_nearest(db.actor:position(), max_radius, function(obj)
 		if (IsStalker(obj) or IsMonster(obj)) and obj:alive() and obj:relation(db.actor) == game_object.enemy then
 			table.insert(npc_list, {
-				id = obj:id(),
-				name = obj:character_name()
+				id = obj:id()
 			})
 		end
 	end)
