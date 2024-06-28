@@ -364,6 +364,8 @@ end
 
 -- Hook
 
+local voiced_actor_blacklist = { "fear", "exhausted" }
+
 function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
 	actor_effects.play_sound_breath_mask = play_sound_breath_mask
@@ -374,14 +376,39 @@ function hook_functions()
 
 		AGDD_voiced_actor.actor_speak = function(file, sound_volume, cooldown, chance, requires_squad, has_priority,
 												 ignore_conditionals, is_state)
-			printf("Voiced actor wants to plays sound, muting and suspending breathing.")
+			-- Check blacklist, skip playback for sounds already handled in breathing script.
+			for _, blacklisted_word in ipairs(voiced_actor_blacklist) do
+				if string.find(file, blacklisted_word) then
+					return
+				end
+			end
+
+			-- Alter regular hurt sounds, block above higher health threshold.
+			if string.find(file, "hurt_bad") then
+				chance = chance / 4
+			elseif string.find(file, "hurt") then
+				if db.actor:health() > 0.5 then
+					return
+				end
+
+				chance = chance / 4
+			end
+
+			-- Augment random chance for playback, replace voiced actor script logic.
+			local rolled_chance = math.random(1, 100)
+
+			if chance < rolled_chance then
+				return
+			end
+
+			printf("Muting and suspending breathing, voiced actor sound playback '" .. file .. "'.")
 			actor_speaking_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
 
 			if breath_snd then
 				breath_snd.volume = 0
 			end
 
-			original_actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority, ignore_conditionals,
+			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
 				is_state)
 		end
 	end
