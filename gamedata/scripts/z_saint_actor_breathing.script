@@ -429,7 +429,6 @@ end
 
 -- Hook
 
-local voiced_actor_blacklist = { "fear", "exhausted" }
 
 function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
