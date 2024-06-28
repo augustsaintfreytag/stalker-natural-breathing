@@ -466,7 +466,8 @@ function hook_functions()
 				return
 			end
 
-			printf("Muting and suspending breathing, voiced actor sound playback '" .. file .. "'.")
+			printf("Muting and suspending breathing, voiced actor sound playback '" ..
+				file .. "' for total cooldown " .. cooldown + opt.speaking_cooldown .. "ms.")
 			actor_speaking_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
 
 			if breath_snd then
