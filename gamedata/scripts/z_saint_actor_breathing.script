@@ -68,7 +68,6 @@ local snd_residual_cooldown_by_kind = {}
 
 -- Configuration
 
-local residual_snd_kinds = { SND_KIND.HEALTH_RELATED, SND_KIND.STAMINA_RELATED }
 local voiced_actor_blacklist = { "fear", "exhausted" }
 
 -- Ticking
@@ -197,7 +196,7 @@ function play_sound_breath(actor)
 
 			if current_time < snd_record.time then
 				local snd_index = tick_breath_snd_index(snd_kind)
-				play_sound_with_parameters(actor, snd_kind, snd_record.mode, snd_index, snd_record.pause_factor, true)
+				play_sound_with_parameters(actor, snd_kind, snd_record.mode, snd_index, snd_record.pause_factor)
 
 				printf("Playing residual sound of kind '" ..
 					snd_kind .. "' with mode " .. snd_record.mode .. " and index " ..
@@ -223,8 +222,7 @@ function play_sound_breath(actor)
 		-- Player is badly wounded, play sounds for injury.
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
-			snd_index, 1.25)
-
+			snd_index, 1.25, true)
 		return
 	end
 
@@ -232,8 +230,7 @@ function play_sound_breath(actor)
 	if (actor_health <= opt.health.level2 and actor_health > opt.health.level1) then
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.LIGHTLY_WOUNDED,
-			snd_index, 1.25)
-
+			snd_index, 1.25, true)
 		return
 	end
 
@@ -250,6 +247,7 @@ function play_sound_breath(actor)
 			-- Play sweetener sound
 			local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SND_KIND.STAMINA_RELATED_SWEETENER, snd_index, 1.5)
+
 			return
 		end
 
@@ -261,7 +259,7 @@ function play_sound_breath(actor)
 			" and index " ..
 			tostring(snd_index) ..
 			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
-		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.5)
+		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.5, true)
 		return
 	end
 
@@ -271,6 +269,7 @@ function play_sound_breath(actor)
 	local snd_index = tick_breath_snd_index(SND_KIND.DEFAULT)
 	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
 	local snd_pause_factor = 1.6
+	local snd_should_reside = false
 
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
@@ -278,20 +277,22 @@ function play_sound_breath(actor)
 	if fear_factor > 0.7 then
 		snd_mode = SND_DEFAULT_BREATH_MODE.FEAR
 		snd_pause_factor = 1.4
+		snd_should_reside = true
 	elseif fear_factor > 0.3 then
 		snd_mode = SND_DEFAULT_BREATH_MODE.DISTRESS
 		snd_pause_factor = 1.5
+		snd_should_reside = true
 	end
 
 	printf("Playing default breathing sound with mode " ..
 		tostring(snd_mode) .. " and index " .. tostring(snd_index) .. ".")
 
-	play_sound_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, snd_pause_factor)
+	play_sound_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, snd_pause_factor, snd_should_reside)
 end
 
 -- Sound Playback
 
-function play_sound_with_parameters(actor, kind, mode, index, pause_factor, is_residual)
+function play_sound_with_parameters(actor, kind, mode, index, pause_factor, should_reside)
 	breath_snd = sound_object("actor\\" .. kind .. "_" .. mode .. "_" .. index)
 	breath_snd:play(actor, 0, sound_object.s2d)
 	breath_snd.volume = actor_sound_volume()
@@ -301,13 +302,8 @@ function play_sound_with_parameters(actor, kind, mode, index, pause_factor, is_r
 
 	snd_cooldown_time = current_time + snd_duration * pause_factor
 
-	if not is_residual and table.has_value(residual_snd_kinds, kind) then
-		printf("Adding residual sound record for kind '" .. kind .. "' with mode " .. mode .. ".")
-		snd_residual_cooldown_by_kind[kind] = {
-			mode = mode,
-			pause_factor = pause_factor,
-			time = current_time + opt.residuality_time
-		}
+	if should_reside then
+		register_residual_sound(kind, mode, pause_factor)
 	end
 end
 
@@ -318,6 +314,16 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 
 	local current_time = time_global()
 	snd_cooldown_time = current_time + breath_snd:length() or 1000 * pause_factor
+end
+
+-- Residual Sound Registration
+
+function register_residual_sound(kind, mode, pause_factor)
+	snd_residual_cooldown_by_kind[kind] = {
+		mode = mode,
+		pause_factor = pause_factor,
+		time = time_global() + opt.residuality_time
+	}
 end
 
 -- Sound Metadata
