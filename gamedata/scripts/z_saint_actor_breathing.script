@@ -329,7 +329,7 @@ function actor_sound_volume(is_masked)
 	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
 end
 
--- Conditions
+-- Fear Factor
 
 function calculate_fear_factor()
 	local is_night = get_is_night()
@@ -341,7 +341,7 @@ function calculate_fear_factor()
 
 	local fear_value = 0
 
-	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 2)
+	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 4)
 	fear_value = fear_value + clamp((1 / get_psy_health() - 1), 0, 5)
 
 	if is_in_combat then
@@ -378,6 +378,8 @@ function calculate_fear_factor()
 
 	return fear_factor
 end
+
+-- Conditions
 
 function get_is_surge()
 	return xr_conditions.surge_started()
