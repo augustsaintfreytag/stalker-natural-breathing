@@ -253,6 +253,8 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	snd_cooldown_time = current_time + breath_snd:length() or 4000 * pause_factor
 end
 
+-- Sound Metadata
+
 function actor_sound_volume(is_masked)
 	if last_cam_dist > opt.cam_dist then
 		return 0
