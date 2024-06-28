@@ -277,6 +277,7 @@ function calculate_fear_factor()
 	local fear_value = 0
 
 	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 2)
+	fear_value = fear_value + clamp((1 / get_psy_health() - 1), 0, 5)
 
 	if is_in_combat then
 		fear_value = fear_value + 2
@@ -298,7 +299,7 @@ function calculate_fear_factor()
 		fear_value = fear_value / 2
 	end
 
-	local fear_factor = fear_value / 10
+	local fear_factor = clamp(fear_value / 10, 0, 1)
 
 	printf("Calculated aggregate player fear factor: " ..
 		tostring(fear_factor) ..
@@ -335,6 +336,14 @@ function get_is_in_combat()
 	end
 
 	return AGDD_voiced_actor.is_actor_in_combat() or false
+end
+
+function get_psy_health()
+	if arszi_psy then
+		return arszi_psy.get_psy_health()
+	end
+
+	return db.actor:psy_health()
 end
 
 function get_number_of_nearby_threats()
