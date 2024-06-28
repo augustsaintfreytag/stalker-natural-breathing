@@ -224,7 +224,7 @@ function play_sound_breath(actor)
 		-- Player is badly wounded, play sounds for injury.
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
-			snd_index, 1.1)
+			snd_index, 1.25)
 
 		return
 	end
@@ -256,27 +256,26 @@ function play_sound_breath(actor)
 			" and index " ..
 			tostring(snd_index) ..
 			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
-		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.25)
+		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.5)
 		return
 	end
 
-	-- Player is not out of stamina, reset breathing sound cycle.
 	reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
 
-	-- Player can breathe normally (default mode).
+	-- Regular Breathing
 	local snd_index = tick_breath_snd_index(SND_KIND.DEFAULT)
 	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
-	local snd_pause_factor = 1.35
+	local snd_pause_factor = 1.6
 
-	-- Check for player fear factor and adjust breathing sound.
+	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
 
 	if fear_factor > 0.7 then
 		snd_mode = SND_DEFAULT_BREATH_MODE.FEAR
-		snd_pause_factor = 1.25
+		snd_pause_factor = 1.4
 	elseif fear_factor > 0.3 then
 		snd_mode = SND_DEFAULT_BREATH_MODE.DISTRESS
-		snd_pause_factor = 1.18
+		snd_pause_factor = 1.5
 	end
 
 	printf("Playing default breathing sound with mode " ..
