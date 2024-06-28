@@ -163,7 +163,7 @@ function play_sound_breath_mask(actor)
 	local snd_mode = tostring((actor.health > 0.2) and math.ceil((1.01 - actor.power) * 3 + last_actor_speed_time / 8) or
 		8)
 
-	play_sound_breath_with_parameters(actor, SND_KIND.GAS_MASK, snd_mode, snd_index, 1.25)
+	play_sound_with_parameters(actor, SND_KIND.GAS_MASK, snd_mode, snd_index, 1.25)
 end
 
 -- Actor Breathing (Unmasked)
@@ -179,7 +179,7 @@ function play_sound_breath(actor)
 	if (actor_health <= opt.health.level1) then
 		-- Player is badly wounded, play sounds for injury.
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
-		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
+		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
 			snd_index, 1.1)
 
 		return
@@ -187,7 +187,7 @@ function play_sound_breath(actor)
 
 	if (actor_health <= opt.health.level2 and actor_health > opt.health.level1) then
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
-		play_sound_breath_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.LIGHTLY_WOUNDED,
+		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.LIGHTLY_WOUNDED,
 			snd_index, 1.25)
 
 		return
@@ -204,7 +204,7 @@ function play_sound_breath(actor)
 			" and index " ..
 			tostring(snd_index) ..
 			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
-		play_sound_breath_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.25)
+		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.25)
 		return
 	end
 
@@ -230,27 +230,27 @@ function play_sound_breath(actor)
 	printf("Playing default breathing sound with mode " ..
 		tostring(snd_mode) .. " and index " .. tostring(snd_index) .. ".")
 
-	play_sound_breath_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, 1.35)
+	play_sound_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, snd_pause_factor)
 end
 
--- Playback
+-- Sound Playback
 
-function play_sound_breath_with_parameters(actor, kind, mode, index, pause_factor)
-	local current_time = time_global()
-
-	snd_cooldown_time = current_time + last_breath_snd_length() * pause_factor
-
+function play_sound_with_parameters(actor, kind, mode, index, pause_factor)
 	breath_snd = sound_object("actor\\" .. kind .. "_" .. mode .. "_" .. index)
 	breath_snd:play(actor, 0, sound_object.s2d)
 	breath_snd.volume = actor_sound_volume()
+
+	local current_time = time_global()
+	snd_cooldown_time = current_time + breath_snd:length() or 4000 * pause_factor
 end
 
-function last_breath_snd_length()
-	if not breath_snd then
-		return 4000
-	end
+function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
+	breath_snd = sound_object("actor\\" .. kind .. "_" .. index)
+	breath_snd:play(actor, 0, sound_object.s2d)
+	breath_snd.volume = actor_sound_volume()
 
-	return breath_snd:length()
+	local current_time = time_global()
+	snd_cooldown_time = current_time + breath_snd:length() or 4000 * pause_factor
 end
 
 function actor_sound_volume(is_masked)
