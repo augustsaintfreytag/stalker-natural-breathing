@@ -427,8 +427,19 @@ function get_number_of_nearby_threats()
 	return #npc_list
 end
 
--- Hook
+-- Utility
 
+function table.has_value(tab, val)
+	for _, value in ipairs(tab) do
+		if value == val then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- Hook
 
 function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
