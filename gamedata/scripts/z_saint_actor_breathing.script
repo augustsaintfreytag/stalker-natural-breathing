@@ -111,6 +111,7 @@ function init_options()
 
 	opt.speaking_cooldown = 1000
 	opt.residuality_time = 5000
+	opt.fear_factor_npc_detection_radius = 60
 
 	opt.breathing_sound_volume = 0.8
 	opt.breathing_sound_volume_jitter = 0.1
@@ -411,7 +412,7 @@ function get_psy_health()
 end
 
 function get_number_of_nearby_threats()
-	local max_radius = 50
+	local max_radius = opt.fear_factor_npc_detection_radius
 	local npc_list = {} -- Records of { id, name, distance (unknown) }
 
 	level.iterate_nearest(db.actor:position(), max_radius, function(obj)
