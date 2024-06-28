@@ -360,7 +360,7 @@ function calculate_fear_factor()
 		fear_value = fear_value + 2
 	end
 
-	if is_in_safe_space then
+	if is_in_safe_space and not is_underground then
 		fear_value = fear_value / 2
 	end
 
