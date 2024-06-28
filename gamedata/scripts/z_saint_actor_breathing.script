@@ -59,17 +59,10 @@ local num_snds_by_kind = {
 }
 
 function tick_breath_snd_index(kind)
-	local current_index = snd_index_by_kind[kind]
 	local num_snds = num_snds_by_kind[kind]
+	snd_index_by_kind[kind] = snd_index_by_kind[kind] % num_snds + 1
 
-	current_index = current_index + 1
-	if current_index > num_snds then
-		current_index = 1
-	end
-
-	snd_index_by_kind[kind] = current_index
-
-	return current_index
+	return snd_index_by_kind[kind]
 end
 
 function reset_breath_snd_index(kind)
