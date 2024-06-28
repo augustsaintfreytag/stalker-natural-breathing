@@ -11,8 +11,9 @@ local snd_cooldown_time = 0
 local last_actor_speed = 0
 local last_actor_position = { x = 0, y = 0, z = 0 }
 local last_actor_speed_time = 0
-local actor_speaking_cooldown_time = 0
 local last_cam_dist = 0
+
+local actor_speaking_cooldown_time = 0
 
 local breath_snd = nil
 
@@ -20,7 +21,8 @@ local SND_KIND = {
 	DEFAULT = "breath",
 	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
-	STAMINA_RELATED = "run"
+	STAMINA_RELATED = "run",
+	STAMINA_RELATED_SWEETENER = "exhausted"
 }
 
 local SND_DEFAULT_BREATH_MODE = {
@@ -44,14 +46,16 @@ local snd_index_by_kind = {
 	[SND_KIND.DEFAULT] = 0,
 	[SND_KIND.GAS_MASK] = 0,
 	[SND_KIND.HEALTH_RELATED] = 0,
-	[SND_KIND.STAMINA_RELATED] = 0
+	[SND_KIND.STAMINA_RELATED] = 0,
+	[SND_KIND.STAMINA_RELATED_SWEETENER] = 0
 }
 
 local num_snds_by_kind = {
 	[SND_KIND.DEFAULT] = 8,
 	[SND_KIND.GAS_MASK] = 8,
 	[SND_KIND.HEALTH_RELATED] = 8,
-	[SND_KIND.STAMINA_RELATED] = 6
+	[SND_KIND.STAMINA_RELATED] = 6,
+	[SND_KIND.STAMINA_RELATED_SWEETENER] = 7
 }
 
 function tick_breath_snd_index(kind)
@@ -193,6 +197,12 @@ function play_sound_breath(actor)
 		return
 	end
 
+	if (actor.power < 0.05 and math.random() < 0.5) then
+		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED_SWEETENER)
+		play_sound_sweetener_with_parameters(actor, SND_KIND.STAMINA_RELATED_SWEETENER, snd_index, 1.25)
+
+		return
+	end
 	-- Player is healthy, only play sounds for stamina or running.
 	if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) then
 		-- Player is running or low on stamina
