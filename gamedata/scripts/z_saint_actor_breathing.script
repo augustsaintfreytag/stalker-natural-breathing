@@ -122,14 +122,14 @@ function update_actor_speed(actor)
 	last_actor_speed = current_speed
 end
 
-function update_actor_speed_time(actor)
+function update_actor_speed_time()
 	if (last_actor_speed > opt.speed.mini) then
 		last_actor_speed_time = last_actor_speed_time + opt.speed.inc
 	elseif last_actor_speed_time > opt.speed.dec then
 		last_actor_speed_time = last_actor_speed_time - opt.speed.dec
 	end
 
-	last_actor_speed_time = math.min(32, last_actor_speed_time + actor.bleeding * opt.speed.k_bleed)
+	last_actor_speed_time = math.min(32, last_actor_speed_time)
 end
 
 -- Actor Breathing Tick
@@ -141,7 +141,7 @@ function update_breathing(actor)
 
 	update_actor_cam_distance(actor)
 	update_actor_speed(actor)
-	update_actor_speed_time(actor)
+	update_actor_speed_time()
 
 	if is_respi_on() then
 		play_sound_breath_mask(actor)
