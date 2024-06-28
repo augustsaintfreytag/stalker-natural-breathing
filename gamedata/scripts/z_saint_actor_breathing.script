@@ -203,10 +203,12 @@ function play_sound_breath(actor)
 
 		return
 	end
+
 	-- Player is healthy, only play sounds for stamina or running.
-	if (last_actor_speed_time > opt.speed.time_mini) or (actor.power < opt.speed.stamina) then
+	if actor.power < 0.85 then
 		-- Player is running or low on stamina
-		local snd_mode = clamp(math.ceil(3 / (3 * actor.power)), 1, 3)
+		-- local snd_mode = clamp(math.ceil(3 / (3 * actor.power)), 1, 3)
+		local snd_mode = math.ceil(3 * last_actor_speed_time / 44)
 		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED) -- SND_RUN_BREATH_MODE (1–3)
 
 		printf("Playing stamina-related breathing sound with mode " ..
