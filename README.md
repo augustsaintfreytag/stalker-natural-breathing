@@ -23,6 +23,9 @@ This mod includes the following features:
   - The higher the calculated fear factor is, the more elevated the breathing becomes (3 stages)
 - Introduces high quality custom-made female breathing sounds
   - New sounds cover calm (3 modes), low stamina/running (3 modes), and low health (2 modes)
+- Implements a system for residual sounds where one state can persist for a while even if conditions change
+  - Even if a character has restored stamina and could run again, their heartrate would still be elevated
+  - Prevents odd single breaths, e.g. when hitting a stamina threshold, getting one exhausted sound, then a calm one again
 - Significantly cleans up playback system, add types for modes, add reusable logic for cycles
 
 ## License
