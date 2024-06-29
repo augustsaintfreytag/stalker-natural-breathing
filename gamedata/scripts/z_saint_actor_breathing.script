@@ -29,6 +29,14 @@ local SND_RUN_BREATH_MODE = {
 	MODERATELY_EXHAUSTED = "2"
 }
 
+local SND_PAUSE_FACTOR = {
+	REGULAR = 1.5,
+	MODERATE_DISTRESS = 1.4,
+	EXTREME_DISTRESS = 1.4,
+	STAMINA_RELATED = 1.5,
+	HEALTH_RELATED = 1.25
+}
+
 -- State
 
 local opt = {}
@@ -228,14 +236,15 @@ function play_sound_breath(actor)
 		if actor_health <= opt.health.level1 and math.random() > 0.75 then
 			-- Player is critically wounded, play sweetener.
 			local snd_index = tick_breath_snd_index(SND_KIND.FEAR_SWEETENER)
-			play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index, 1.25)
+			play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index,
+				SND_PAUSE_FACTOR.HEALTH_RELATED)
 
 			return
 		end
 
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.WOUNDED,
-			snd_index, 1.25, true)
+			snd_index, SND_PAUSE_FACTOR.HEALTH_RELATED, true)
 		return
 	end
 
@@ -251,47 +260,50 @@ function play_sound_breath(actor)
 		if snd_mode_avg > 2 and math.random() > 0.75 then
 			-- Play sweetener sound
 			local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED_SWEETENER)
-			play_sound_sweetener_with_parameters(actor, SND_KIND.STAMINA_RELATED_SWEETENER, snd_index, 1.5)
+			play_sound_sweetener_with_parameters(actor, SND_KIND.STAMINA_RELATED_SWEETENER, snd_index,
+				SND_PAUSE_FACTOR.STAMINA_RELATED)
 
 			return
 		end
 
 		local snd_mode = clamp(snd_mode_avg, 1, 2)
-		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED) -- SND_RUN_BREATH_MODE (1–3)
+		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED)
 
 		printf("Playing stamina-related breathing sound with mode " ..
 			tostring(snd_mode) ..
 			" and index " ..
 			tostring(snd_index) ..
 			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
-		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, 1.5, true)
+		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, SND_PAUSE_FACTOR
+			.STAMINA_RELATED, true)
 		return
 	end
 
 	reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
 
 	-- Regular Breathing
-	local snd_pause_factor = 1.6
 	local snd_mode = SND_REGULAR_BREATH_MODE.REGULAR
+	local snd_pause_factor = SND_PAUSE_FACTOR.REGULAR
 	local snd_should_reside = false
 
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
 
 	if fear_factor > 0.7 then
-		snd_pause_factor = 1.4
 		snd_mode = SND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
+		snd_pause_factor = SND_PAUSE_FACTOR.EXTREME_DISTRESS
 		snd_should_reside = true
 	elseif fear_factor > 0.3 then
-		snd_pause_factor = 1.5
 		snd_mode = SND_REGULAR_BREATH_MODE.MODERATE_DISTRESS
+		snd_pause_factor = SND_PAUSE_FACTOR.MODERATE_DISTRESS
 		snd_should_reside = true
 	end
 
 	if fear_factor > 0.7 and math.random() > 0.75 then
 		-- High distress, play fear sweetener.
 		local snd_index = tick_breath_snd_index(SND_KIND.FEAR_SWEETENER)
-		play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index, 1.25)
+		play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index, SND_PAUSE_FACTOR
+			.EXTREME_DISTRESS)
 
 		return
 	end
