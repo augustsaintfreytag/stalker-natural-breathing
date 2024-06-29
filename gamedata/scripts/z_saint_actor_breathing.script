@@ -248,8 +248,6 @@ function play_sound_breath(actor)
 		return
 	end
 
-	reset_breath_snd_index(SND_KIND.HEALTH_RELATED)
-
 	-- Stamina
 	if actor.power < 0.9 and last_actor_speed_time > 0.5 then
 		-- Player is running or low on stamina
@@ -278,8 +276,6 @@ function play_sound_breath(actor)
 			.STAMINA_RELATED, true)
 		return
 	end
-
-	reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
 
 	-- Regular Breathing
 	local snd_mode = SND_REGULAR_BREATH_MODE.REGULAR
