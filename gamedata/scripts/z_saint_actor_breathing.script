@@ -123,6 +123,7 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 1000
+	opt.item_use_cooldown = 5000
 	opt.hit_distress_cooldown = 10000
 	opt.residuality_time = 5000
 	opt.fear_factor_npc_detection_radius = 50
@@ -534,6 +535,26 @@ function hook_functions()
 
 			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
 				is_state)
+		end
+	end
+
+	if actor_effects then
+		local original_play_item_fx = actor_effects.play_item_fx
+		actor_effects.play_item_fx = function(item)
+			printf("Player used item (via play item fx), setting action cooldown time to " ..
+				opt.item_use_cooldown .. "ms.")
+			snd_action_cooldown_time = time_global() + opt.item_use_cooldown
+			original_play_item_fx(item)
+		end
+	end
+
+	if enhanced_animations then
+		local original_start_anim = enhanced_animations.start_anim
+		enhanced_animations.start_anim = function(anim_section_hud)
+			printf("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
+				opt.item_use_cooldown .. "ms.")
+			snd_action_cooldown_time = time_global() + opt.item_use_cooldown
+			original_start_anim(anim_section_hud)
 		end
 	end
 end
