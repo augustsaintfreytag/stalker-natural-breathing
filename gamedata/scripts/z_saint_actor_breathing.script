@@ -507,6 +507,10 @@ function hook_functions()
 				chance = chance / 4
 			end
 
+			-- Fix playback volume for player hurt sounds, remove dependency on player health.
+			if string.find(file, "hurt") then
+				sound_volume = 1.0
+			end
 
 			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush.
 			if string.find(file, "pain") then
