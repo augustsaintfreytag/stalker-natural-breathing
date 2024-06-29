@@ -14,8 +14,8 @@ local SND_KIND = {
 	STAMINA_RELATED_SWEETENER = "run_s"
 }
 
-local SND_DEFAULT_BREATH_MODE = {
-	DEFAULT = "1",
+local SND_REGULAR_BREATH_MODE = {
+	REGULAR = "1",
 	MODERATE_DISTRESS = "2",
 	EXTREME_DISTRESS = "3"
 }
@@ -271,20 +271,20 @@ function play_sound_breath(actor)
 	reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
 
 	-- Regular Breathing
-	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
 	local snd_pause_factor = 1.6
+	local snd_mode = SND_REGULAR_BREATH_MODE.REGULAR
 	local snd_should_reside = false
 
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
 
 	if fear_factor > 0.7 then
-		snd_mode = SND_DEFAULT_BREATH_MODE.EXTREME_DISTRESS
 		snd_pause_factor = 1.4
+		snd_mode = SND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
 		snd_should_reside = true
 	elseif fear_factor > 0.3 then
-		snd_mode = SND_DEFAULT_BREATH_MODE.MODERATE_DISTRESS
 		snd_pause_factor = 1.5
+		snd_mode = SND_REGULAR_BREATH_MODE.MODERATE_DISTRESS
 		snd_should_reside = true
 	end
 
