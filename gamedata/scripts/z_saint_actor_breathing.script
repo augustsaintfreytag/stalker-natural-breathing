@@ -288,7 +288,7 @@ function play_sound_breath(actor)
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
 
-	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown < current_time then
+	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
 		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
 		snd_mode = SND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
 		snd_pause_factor = SND_PAUSE_FACTOR.EXTREME_DISTRESS
