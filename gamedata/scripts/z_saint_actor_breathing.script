@@ -48,7 +48,7 @@ local last_actor_speed_time = 0
 local last_actor_hit_time = 0
 local last_cam_dist = 0
 
-local actor_speaking_cooldown_time = 0
+local snd_action_cooldown_time = 0
 
 local breath_snd = nil
 
@@ -182,7 +182,7 @@ end
 function play_sound_breath_mask(actor)
 	local current_time = time_global()
 
-	if (current_time <= snd_cooldown_time) or (current_time < actor_speaking_cooldown_time) then
+	if (current_time <= snd_cooldown_time) or (current_time < snd_action_cooldown_time) then
 		return
 	end
 
@@ -199,7 +199,7 @@ function play_sound_breath(actor)
 	local current_time = time_global()
 	local actor_health = actor.health
 
-	if (current_time < snd_cooldown_time) or (current_time < actor_speaking_cooldown_time) or (actor_health < 0) then
+	if (current_time < snd_cooldown_time) or (current_time < snd_action_cooldown_time) or (actor_health < 0) then
 		return
 	end
 
@@ -526,7 +526,7 @@ function hook_functions()
 
 			printf("Muting and suspending breathing, voiced actor sound playback '" ..
 				file .. "' for total cooldown " .. cooldown + opt.speaking_cooldown .. "ms.")
-			actor_speaking_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
+			snd_action_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
 
 			if breath_snd then
 				breath_snd.volume = 0
