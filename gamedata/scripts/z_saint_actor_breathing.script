@@ -6,7 +6,7 @@ local is_mask_on = actor_effects.is_mask_on
 -- Types
 
 local SND_KIND = {
-	DEFAULT = "breath",
+	REGULAR = "breath",
 	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
@@ -15,13 +15,12 @@ local SND_KIND = {
 
 local SND_DEFAULT_BREATH_MODE = {
 	DEFAULT = "1",
-	DISTRESS = "2",
-	FEAR = "3"
+	MODERATE_DISTRESS = "2",
+	EXTREME_DISTRESS = "3"
 }
 
 local SND_HEALTH_BREATH_MODE = {
-	LIGHTLY_WOUNDED = "1",
-	SEVERELY_WOUNDED = "2"
+	WOUNDED = "1"
 }
 
 local SND_RUN_BREATH_MODE = {
@@ -44,7 +43,7 @@ local actor_speaking_cooldown_time = 0
 local breath_snd = nil
 
 local snd_index_by_kind = {
-	[SND_KIND.DEFAULT] = 0,
+	[SND_KIND.REGULAR] = 0,
 	[SND_KIND.GAS_MASK] = 0,
 	[SND_KIND.HEALTH_RELATED] = 0,
 	[SND_KIND.STAMINA_RELATED] = 0,
@@ -52,7 +51,7 @@ local snd_index_by_kind = {
 }
 
 local num_snds_by_kind = {
-	[SND_KIND.DEFAULT] = 8,
+	[SND_KIND.REGULAR] = 8,
 	[SND_KIND.GAS_MASK] = 8,
 	[SND_KIND.HEALTH_RELATED] = 8,
 	[SND_KIND.STAMINA_RELATED] = 6,
@@ -217,19 +216,9 @@ function play_sound_breath(actor)
 		::continue::
 	end
 
-	-- Very Low Health
-	if (actor_health <= opt.health.level1) then
-		-- Player is badly wounded, play sounds for injury.
-		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
-		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.SEVERELY_WOUNDED,
-			snd_index, 1.25, true)
-		return
-	end
-
 	-- Low Health
-	if (actor_health <= opt.health.level2 and actor_health > opt.health.level1) then
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
-		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.LIGHTLY_WOUNDED,
+		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.WOUNDED,
 			snd_index, 1.25, true)
 		return
 	end
@@ -266,7 +255,6 @@ function play_sound_breath(actor)
 	reset_breath_snd_index(SND_KIND.STAMINA_RELATED)
 
 	-- Regular Breathing
-	local snd_index = tick_breath_snd_index(SND_KIND.DEFAULT)
 	local snd_mode = SND_DEFAULT_BREATH_MODE.DEFAULT
 	local snd_pause_factor = 1.6
 	local snd_should_reside = false
@@ -275,19 +263,20 @@ function play_sound_breath(actor)
 	local fear_factor = calculate_fear_factor()
 
 	if fear_factor > 0.7 then
-		snd_mode = SND_DEFAULT_BREATH_MODE.FEAR
+		snd_mode = SND_DEFAULT_BREATH_MODE.EXTREME_DISTRESS
 		snd_pause_factor = 1.4
 		snd_should_reside = true
 	elseif fear_factor > 0.3 then
-		snd_mode = SND_DEFAULT_BREATH_MODE.DISTRESS
+		snd_mode = SND_DEFAULT_BREATH_MODE.MODERATE_DISTRESS
 		snd_pause_factor = 1.5
 		snd_should_reside = true
 	end
 
+	local snd_index = tick_breath_snd_index(SND_KIND.REGULAR)
 	printf("Playing default breathing sound with mode " ..
 		tostring(snd_mode) .. " and index " .. tostring(snd_index) .. ".")
 
-	play_sound_with_parameters(actor, SND_KIND.DEFAULT, snd_mode, snd_index, snd_pause_factor, snd_should_reside)
+	play_sound_with_parameters(actor, SND_KIND.REGULAR, snd_mode, snd_index, snd_pause_factor, snd_should_reside)
 end
 
 -- Sound Playback
