@@ -368,12 +368,13 @@ function calculate_fear_factor()
 	local is_in_combat = get_is_in_combat()
 	local is_surge = get_is_surge()
 	local is_in_safe_space = get_is_in_safe_space()
+	local psy_health = get_psy_health()
 	local number_of_nearby_threats = get_number_of_nearby_threats()
 
 	local fear_value = 0
 
 	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 4)
-	fear_value = fear_value + clamp((1 / get_psy_health() - 1), 0, 5)
+	fear_value = fear_value + clamp((1 / psy_health - 1), 0, 5)
 
 	if is_in_combat then
 		fear_value = fear_value + 2
@@ -405,7 +406,7 @@ function calculate_fear_factor()
 		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
 		tostring(is_underground) ..
 		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-		", nearby threats: " .. tostring(number_of_nearby_threats) .. ").")
+		", psy health: " .. tostring(psy_health) .. ", nearby threats: " .. tostring(number_of_nearby_threats) .. ").")
 
 	return fear_factor
 end
