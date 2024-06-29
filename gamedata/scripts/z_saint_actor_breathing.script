@@ -7,6 +7,7 @@ local is_mask_on = actor_effects.is_mask_on
 
 local SND_KIND = {
 	REGULAR = "breath",
+	FEAR_SWEETENER = "shiver",
 	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
@@ -44,6 +45,7 @@ local breath_snd = nil
 
 local snd_index_by_kind = {
 	[SND_KIND.REGULAR] = 0,
+	[SND_KIND.FEAR_SWEETENER] = 0,
 	[SND_KIND.GAS_MASK] = 0,
 	[SND_KIND.HEALTH_RELATED] = 0,
 	[SND_KIND.STAMINA_RELATED] = 0,
@@ -52,6 +54,7 @@ local snd_index_by_kind = {
 
 local num_snds_by_kind = {
 	[SND_KIND.REGULAR] = 8,
+	[SND_KIND.FEAR_SWEETENER] = 8,
 	[SND_KIND.GAS_MASK] = 8,
 	[SND_KIND.HEALTH_RELATED] = 8,
 	[SND_KIND.STAMINA_RELATED] = 6,
@@ -217,6 +220,15 @@ function play_sound_breath(actor)
 	end
 
 	-- Low Health
+	if actor_health <= opt.health.level2 then
+		if actor_health <= opt.health.level1 and math.random() > 0.75 then
+			-- Player is critically wounded, play sweetener.
+			local snd_index = tick_breath_snd_index(SND_KIND.FEAR_SWEETENER)
+			play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index, 1.25)
+
+			return
+		end
+
 		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
 		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.WOUNDED,
 			snd_index, 1.25, true)
@@ -270,6 +282,14 @@ function play_sound_breath(actor)
 		snd_mode = SND_DEFAULT_BREATH_MODE.MODERATE_DISTRESS
 		snd_pause_factor = 1.5
 		snd_should_reside = true
+	end
+
+	if fear_factor > 0.7 and math.random() > 0.75 then
+		-- High distress, play fear sweetener.
+		local snd_index = tick_breath_snd_index(SND_KIND.FEAR_SWEETENER)
+		play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index, 1.25)
+
+		return
 	end
 
 	local snd_index = tick_breath_snd_index(SND_KIND.REGULAR)
