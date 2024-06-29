@@ -75,8 +75,12 @@ local voiced_actor_blacklist = { "fear", "exhausted" }
 -- Ticking
 
 function tick_breath_snd_index(kind)
-	local num_snds = num_snds_by_kind[kind]
-	snd_index_by_kind[kind] = snd_index_by_kind[kind] % num_snds + 1
+	-- Tick all so breathing cycle is consistent between all kinds.
+
+	for i_kind, _ in pairs(snd_index_by_kind) do
+		local num_snds = num_snds_by_kind[i_kind]
+		snd_index_by_kind[i_kind] = snd_index_by_kind[i_kind] % num_snds + 1
+	end
 
 	return snd_index_by_kind[kind]
 end
