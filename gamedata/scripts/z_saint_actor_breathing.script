@@ -5,7 +5,7 @@ local is_mask_on = actor_effects.is_mask_on
 
 -- Types
 
-local SND_KIND = {
+local SOUND_KIND = {
 	REGULAR = "breath",
 	FEAR_SWEETENER = "shiver",
 	GAS_MASK = "gas_breath",
@@ -14,22 +14,22 @@ local SND_KIND = {
 	STAMINA_RELATED_SWEETENER = "run_s"
 }
 
-local SND_REGULAR_BREATH_MODE = {
+local SOUND_REGULAR_BREATH_MODE = {
 	REGULAR = "1",
 	MODERATE_DISTRESS = "2",
 	EXTREME_DISTRESS = "3"
 }
 
-local SND_HEALTH_BREATH_MODE = {
+local SOUND_HEALTH_BREATH_MODE = {
 	WOUNDED = "1"
 }
 
-local SND_RUN_BREATH_MODE = {
+local SOUND_RUN_BREATH_MODE = {
 	LIGHTLY_EXHAUSTED = "1",
 	MODERATELY_EXHAUSTED = "2"
 }
 
-local SND_PAUSE_FACTOR = {
+local SOUND_PAUSE_FACTOR = {
 	REGULAR = 1.5,
 	MODERATE_DISTRESS = 1.4,
 	EXTREME_DISTRESS = 1.4,
@@ -40,7 +40,7 @@ local SND_PAUSE_FACTOR = {
 -- State
 
 local opt = {}
-local snd_cooldown_time = 0
+local sound_cooldown_time = 0
 
 local last_actor_speed = 0
 local last_actor_position = { x = 0, y = 0, z = 0 }
@@ -48,26 +48,26 @@ local last_actor_speed_time = 0
 local last_actor_hit_time = 0
 local last_cam_dist = 0
 
-local snd_action_cooldown_time = 0
+local sound_action_cooldown_time = 0
 
-local breath_snd = nil
+local sound_object_ref = nil
 
-local snd_index_by_kind = {
-	[SND_KIND.REGULAR] = 0,
-	[SND_KIND.FEAR_SWEETENER] = 0,
-	[SND_KIND.GAS_MASK] = 0,
-	[SND_KIND.HEALTH_RELATED] = 0,
-	[SND_KIND.STAMINA_RELATED] = 0,
-	[SND_KIND.STAMINA_RELATED_SWEETENER] = 0
+local sound_index_by_kind = {
+	[SOUND_KIND.REGULAR] = 0,
+	[SOUND_KIND.FEAR_SWEETENER] = 0,
+	[SOUND_KIND.GAS_MASK] = 0,
+	[SOUND_KIND.HEALTH_RELATED] = 0,
+	[SOUND_KIND.STAMINA_RELATED] = 0,
+	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 0
 }
 
-local num_snds_by_kind = {
-	[SND_KIND.REGULAR] = 8,
-	[SND_KIND.FEAR_SWEETENER] = 8,
-	[SND_KIND.GAS_MASK] = 8,
-	[SND_KIND.HEALTH_RELATED] = 8,
-	[SND_KIND.STAMINA_RELATED] = 6,
-	[SND_KIND.STAMINA_RELATED_SWEETENER] = 7
+local num_sounds_by_kind = {
+	[SOUND_KIND.REGULAR] = 8,
+	[SOUND_KIND.FEAR_SWEETENER] = 8,
+	[SOUND_KIND.GAS_MASK] = 8,
+	[SOUND_KIND.HEALTH_RELATED] = 8,
+	[SOUND_KIND.STAMINA_RELATED] = 6,
+	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7
 }
 
 -- Residuality means a mode is retained for some time after the condition is no longer met.
@@ -75,7 +75,7 @@ local num_snds_by_kind = {
 -- Can add forced state transitions where a mode always has to be cycled back up.
 
 -- Format for values: `{ mode = nil, pause_factor = 0, time = 0 }`
-local snd_residual_cooldown_by_kind = {}
+local sound_residual_cooldown_by_kind = {}
 
 -- Configuration
 
@@ -83,19 +83,19 @@ local voiced_actor_blacklist = { "fear", "exhausted" }
 
 -- Ticking
 
-function tick_breath_snd_index(kind)
+function tick_breath_sound_index(kind)
 	-- Tick all so breathing cycle is consistent between all kinds.
 
-	for i_kind, _ in pairs(snd_index_by_kind) do
-		local num_snds = num_snds_by_kind[i_kind]
-		snd_index_by_kind[i_kind] = snd_index_by_kind[i_kind] % num_snds + 1
+	for i_kind, _ in pairs(sound_index_by_kind) do
+		local num_sounds = num_sounds_by_kind[i_kind]
+		sound_index_by_kind[i_kind] = sound_index_by_kind[i_kind] % num_sounds + 1
 	end
 
-	return snd_index_by_kind[kind]
+	return sound_index_by_kind[kind]
 end
 
-function reset_breath_snd_index(kind)
-	snd_index_by_kind[kind] = 0
+function reset_breath_sound_index(kind)
+	sound_index_by_kind[kind] = 0
 end
 
 -- Init
@@ -171,61 +171,41 @@ function update_breathing(actor)
 	update_actor_speed(actor)
 	update_actor_speed_time()
 
-	if is_mask_on() then -- Should this also apply for `is_respi_on`?
-		play_sound_breath_mask(actor)
-	else
-		play_sound_breath(actor)
-	end
+	handle_breathing_cycle(actor)
 end
 
--- Actor Breathing (Masked)
+-- Actor Breathing
 
-function play_sound_breath_mask(actor)
-	local current_time = time_global()
-
-	if (current_time <= snd_cooldown_time) or (current_time < snd_action_cooldown_time) then
-		return
-	end
-
-	local snd_index = tick_breath_snd_index(SND_KIND.GAS_MASK)
-	local snd_mode = tostring((actor.health > 0.2) and math.ceil((1.01 - actor.power) * 3 + last_actor_speed_time / 8) or
-		8)
-
-	play_sound_with_parameters(actor, SND_KIND.GAS_MASK, snd_mode, snd_index, 1.25)
-end
-
--- Actor Breathing (Unmasked)
-
-function play_sound_breath(actor)
+function handle_breathing_cycle(actor)
 	local current_time = time_global()
 	local actor_health = actor.health
 
-	if (current_time < snd_cooldown_time) or (current_time < snd_action_cooldown_time) or (actor_health < 0) then
+	if (current_time < sound_cooldown_time) or (current_time < sound_action_cooldown_time) or (actor_health < 0) then
 		return
 	end
 
 	-- Check residual sounds and play if found.
-	for snd_kind, snd_record in pairs(snd_residual_cooldown_by_kind) do
+	for sound_kind, sound_record in pairs(sound_residual_cooldown_by_kind) do
 		do
-			if not snd_record or not snd_record.mode then
+			if not sound_record or not sound_record.mode then
 				goto continue
 			end
 
-			if current_time < snd_record.time then
-				local snd_index = tick_breath_snd_index(snd_kind)
-				play_sound_with_parameters(actor, snd_kind, snd_record.mode, snd_index, snd_record.pause_factor)
+			if current_time < sound_record.time then
+				local sound_index = tick_breath_sound_index(sound_kind)
+				play_sound_with_parameters(actor, sound_kind, sound_record.mode, sound_index, sound_record.pause_factor)
 
 				printf("Playing residual sound of kind '" ..
-					snd_kind .. "' with mode " .. snd_record.mode .. " and index " ..
-					snd_index .. " (expiration in " .. snd_record.time - current_time .. "ms).")
+					sound_kind .. "' with mode " .. sound_record.mode .. " and index " ..
+					sound_index .. " (expiration in " .. sound_record.time - current_time .. "ms).")
 			else
 				printf("Clearing residual sound of kind '" ..
-					snd_kind ..
+					sound_kind ..
 					"' with mode " ..
-					snd_record.mode .. " (expired since " .. current_time - snd_record.time .. "ms).")
+					sound_record.mode .. " (expired since " .. current_time - sound_record.time .. "ms).")
 
 				-- Residual time window exceeded, clear record.
-				snd_residual_cooldown_by_kind[snd_kind] = nil
+				sound_residual_cooldown_by_kind[sound_kind] = nil
 			end
 
 			return
@@ -238,96 +218,99 @@ function play_sound_breath(actor)
 	if actor_health <= opt.health.level2 then
 		if actor_health <= opt.health.level1 and math.random() > 0.75 then
 			-- Player is critically wounded, play sweetener.
-			local snd_index = tick_breath_snd_index(SND_KIND.FEAR_SWEETENER)
-			play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index,
-				SND_PAUSE_FACTOR.HEALTH_RELATED)
+			local sound_index = tick_breath_sound_index(SOUND_KIND.FEAR_SWEETENER)
+			play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index,
+				SOUND_PAUSE_FACTOR.HEALTH_RELATED)
 
 			return
 		end
 
-		local snd_index = tick_breath_snd_index(SND_KIND.HEALTH_RELATED)
-		play_sound_with_parameters(actor, SND_KIND.HEALTH_RELATED, SND_HEALTH_BREATH_MODE.WOUNDED,
-			snd_index, SND_PAUSE_FACTOR.HEALTH_RELATED, true)
+		local sound_index = tick_breath_sound_index(SOUND_KIND.HEALTH_RELATED)
+		play_sound_with_parameters(actor, SOUND_KIND.HEALTH_RELATED, SOUND_HEALTH_BREATH_MODE.WOUNDED,
+			sound_index, SOUND_PAUSE_FACTOR.HEALTH_RELATED, true)
 		return
 	end
 
 	-- Stamina
 	if actor.power < 0.9 and last_actor_speed_time > 0.5 then
 		-- Player is running or low on stamina
-		local snd_mode_power = round(3 / (3 * actor.power))
-		local snd_mode_speed = round(3 * last_actor_speed_time / 44)
-		local snd_mode_avg = round((snd_mode_power + snd_mode_speed) / 2)
+		local sound_mode_power = round(3 / (3 * actor.power))
+		local sound_mode_speed = round(3 * last_actor_speed_time / 44)
+		local sound_mode_avg = round((sound_mode_power + sound_mode_speed) / 2)
 
-		if snd_mode_avg > 2 and math.random() > 0.75 then
+		if sound_mode_avg > 2 and math.random() > 0.75 then
 			-- Play sweetener sound
-			local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED_SWEETENER)
-			play_sound_sweetener_with_parameters(actor, SND_KIND.STAMINA_RELATED_SWEETENER, snd_index,
-				SND_PAUSE_FACTOR.STAMINA_RELATED)
+			local sound_index = tick_breath_sound_index(SOUND_KIND.STAMINA_RELATED_SWEETENER)
+			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
+				SOUND_PAUSE_FACTOR.STAMINA_RELATED)
 
 			return
 		end
 
-		local snd_mode = clamp(snd_mode_avg, 1, 2)
-		local snd_index = tick_breath_snd_index(SND_KIND.STAMINA_RELATED)
+		local sound_mode = clamp(sound_mode_avg, 1, 2)
+		local sound_index = tick_breath_sound_index(SOUND_KIND.STAMINA_RELATED)
 
 		printf("Playing stamina-related breathing sound with mode " ..
-			tostring(snd_mode) ..
+			tostring(sound_mode) ..
 			" and index " ..
-			tostring(snd_index) ..
+			tostring(sound_index) ..
 			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
-		play_sound_with_parameters(actor, SND_KIND.STAMINA_RELATED, snd_mode, snd_index, SND_PAUSE_FACTOR
+		play_sound_with_parameters(actor, SOUND_KIND.STAMINA_RELATED, sound_mode, sound_index, SOUND_PAUSE_FACTOR
 			.STAMINA_RELATED, true)
 		return
 	end
 
 	-- Regular Breathing
-	local snd_mode = SND_REGULAR_BREATH_MODE.REGULAR
-	local snd_pause_factor = SND_PAUSE_FACTOR.REGULAR
-	local snd_should_reside = false
+	local sound_mode = SOUND_REGULAR_BREATH_MODE.REGULAR
+	local sound_pause_factor = SOUND_PAUSE_FACTOR.REGULAR
+	local sound_should_reside = false
 
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
 
 	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
 		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
-		snd_mode = SND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
-		snd_pause_factor = SND_PAUSE_FACTOR.EXTREME_DISTRESS
-		snd_should_reside = true
+		sound_mode = SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
+		sound_pause_factor = SOUND_PAUSE_FACTOR.EXTREME_DISTRESS
+		sound_should_reside = true
 	elseif fear_factor > 0.3 then
 		-- If fear is moderate, switch to moderate distress for elevated breathing.
-		snd_mode = SND_REGULAR_BREATH_MODE.MODERATE_DISTRESS
-		snd_pause_factor = SND_PAUSE_FACTOR.MODERATE_DISTRESS
-		snd_should_reside = true
+		sound_mode = SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS
+		sound_pause_factor = SOUND_PAUSE_FACTOR.MODERATE_DISTRESS
+		sound_should_reside = true
 	end
 
 	if fear_factor > 0.7 and math.random() > 0.75 then
 		-- High distress, play fear sweetener.
-		local snd_index = tick_breath_snd_index(SND_KIND.FEAR_SWEETENER)
-		play_sound_sweetener_with_parameters(actor, SND_KIND.FEAR_SWEETENER, snd_index, SND_PAUSE_FACTOR
+		local sound_index = tick_breath_sound_index(SOUND_KIND.FEAR_SWEETENER)
+		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
 			.EXTREME_DISTRESS)
 
 		return
 	end
 
 	-- Regular breathing
-	local snd_index = tick_breath_snd_index(SND_KIND.REGULAR)
+	local sound_index = tick_breath_sound_index(SOUND_KIND.REGULAR)
 	printf("Playing default breathing sound with mode " ..
-		tostring(snd_mode) .. " and index " .. tostring(snd_index) .. ".")
+		tostring(sound_mode) .. " and index " .. tostring(sound_index) .. ".")
 
-	play_sound_with_parameters(actor, SND_KIND.REGULAR, snd_mode, snd_index, snd_pause_factor, snd_should_reside)
+	play_sound_with_parameters(actor, SOUND_KIND.REGULAR, sound_mode, sound_index, sound_pause_factor,
+		sound_should_reside)
 end
 
 -- Sound Playback
 
 function play_sound_with_parameters(actor, kind, mode, index, pause_factor, should_reside)
-	breath_snd = sound_object("actor\\" .. kind .. "_" .. mode .. "_" .. index)
-	breath_snd:play(actor, 0, sound_object.s2d)
-	breath_snd.volume = actor_sound_volume()
+	local sound_path = sound_path_from_parameters(actor, kind, mode, index)
+
+	sound_object_ref = sound_object(sound_path)
+	sound_object_ref:play(actor, 0, sound_object.s2d)
+	sound_object_ref.volume = actor_sound_volume()
 
 	local current_time = time_global()
-	local snd_duration = breath_snd:length() or 800
+	local sound_duration = sound_object_ref:length() or 800
 
-	snd_cooldown_time = current_time + snd_duration * pause_factor
+	sound_cooldown_time = current_time + sound_duration * pause_factor
 
 	if should_reside then
 		register_residual_sound(kind, mode, pause_factor)
@@ -335,18 +318,30 @@ function play_sound_with_parameters(actor, kind, mode, index, pause_factor, shou
 end
 
 function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
-	breath_snd = sound_object("actor\\" .. kind .. "_" .. index)
-	breath_snd:play(actor, 0, sound_object.s2d)
-	breath_snd.volume = actor_sound_volume()
+	local sound_path = sound_path_from_parameters(actor, kind, mode, index)
+
+	sound_object_ref = sound_object(sound_path)
+	sound_object_ref:play(actor, 0, sound_object.s2d)
+	sound_object_ref.volume = actor_sound_volume()
 
 	local current_time = time_global()
-	snd_cooldown_time = current_time + breath_snd:length() or 1000 * pause_factor
+	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
+end
+
+function sound_path_from_parameters(actor, kind, mode, index)
+	local sound_name = kind .. "_" .. mode .. "_" .. index
+
+	if is_mask_on(actor) or is_respi_on(actor) then
+		sound_name = "m_" .. sound_name
+	end
+
+	return "actor\\" .. sound_name
 end
 
 -- Residual Sound Registration
 
 function register_residual_sound(kind, mode, pause_factor)
-	snd_residual_cooldown_by_kind[kind] = {
+	sound_residual_cooldown_by_kind[kind] = {
 		mode = mode,
 		pause_factor = pause_factor,
 		time = time_global() + opt.residuality_time
@@ -527,10 +522,10 @@ function hook_functions()
 
 			printf("Muting and suspending breathing, voiced actor sound playback '" ..
 				file .. "' for total cooldown " .. cooldown + opt.speaking_cooldown .. "ms.")
-			snd_action_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
+			sound_action_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
 
-			if breath_snd then
-				breath_snd.volume = 0
+			if sound_object_ref then
+				sound_object_ref.volume = 0
 			end
 
 			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
@@ -543,7 +538,7 @@ function hook_functions()
 		actor_effects.play_item_fx = function(item)
 			printf("Player used item (via play item fx), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
-			snd_action_cooldown_time = time_global() + opt.item_use_cooldown
+			sound_action_cooldown_time = time_global() + opt.item_use_cooldown
 			original_play_item_fx(item)
 		end
 	end
@@ -553,7 +548,7 @@ function hook_functions()
 		enhanced_animations.start_anim = function(anim_section_hud)
 			printf("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
-			snd_action_cooldown_time = time_global() + opt.item_use_cooldown
+			sound_action_cooldown_time = time_global() + opt.item_use_cooldown
 			original_start_anim(anim_section_hud)
 		end
 	end
