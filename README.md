@@ -1,4 +1,4 @@
-(Artwork pending)
+![Artwork Natural Breathing 01](https://github.com/augustsaintfreytag/stalker-natural-breathing/assets/7656669/37ae4a97-eeed-4e8a-a26a-3a5ebd73c6e7)
 
 # STALKER Natural Breathing
 
