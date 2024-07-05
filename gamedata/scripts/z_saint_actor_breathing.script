@@ -52,14 +52,7 @@ local sound_action_cooldown_time = 0
 
 local sound_object_ref = nil
 
-local sound_index_by_kind = {
-	[SOUND_KIND.REGULAR] = 0,
-	[SOUND_KIND.FEAR_SWEETENER] = 0,
-	[SOUND_KIND.GAS_MASK] = 0,
-	[SOUND_KIND.HEALTH_RELATED] = 0,
-	[SOUND_KIND.STAMINA_RELATED] = 0,
-	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 0
-}
+local sound_index_by_kind = {}
 
 local num_sounds_by_kind = {
 	[SOUND_KIND.REGULAR] = 8,
@@ -83,12 +76,14 @@ local voiced_actor_blacklist = { "fear", "exhausted" }
 
 -- Ticking
 
-function tick_breath_sound_index(kind)
+function tick_sound_index(kind)
 	-- Tick all so breathing cycle is consistent between all kinds.
 
-	for i_kind, _ in pairs(sound_index_by_kind) do
-		local num_sounds = num_sounds_by_kind[i_kind]
-		sound_index_by_kind[i_kind] = sound_index_by_kind[i_kind] % num_sounds + 1
+	for _, kind_identifier in pairs(SOUND_KIND) do
+		local current_index = sound_index_by_kind[kind_identifier] or 0
+		local num_sounds = num_sounds_by_kind[kind_identifier]
+
+		sound_index_by_kind[kind_identifier] = current_index % num_sounds + 1
 	end
 
 	return sound_index_by_kind[kind]
@@ -192,7 +187,7 @@ function handle_breathing_cycle(actor)
 			end
 
 			if current_time < sound_record.time then
-				local sound_index = tick_breath_sound_index(sound_kind)
+				local sound_index = tick_sound_index(sound_kind)
 				play_sound_with_parameters(actor, sound_kind, sound_record.mode, sound_index, sound_record.pause_factor)
 
 				printf("Playing residual sound of kind '" ..
@@ -218,14 +213,14 @@ function handle_breathing_cycle(actor)
 	if actor_health <= opt.health.level2 then
 		if actor_health <= opt.health.level1 and math.random() > 0.75 then
 			-- Player is critically wounded, play sweetener.
-			local sound_index = tick_breath_sound_index(SOUND_KIND.FEAR_SWEETENER)
+			local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index,
 				SOUND_PAUSE_FACTOR.HEALTH_RELATED)
 
 			return
 		end
 
-		local sound_index = tick_breath_sound_index(SOUND_KIND.HEALTH_RELATED)
+		local sound_index = tick_sound_index(SOUND_KIND.HEALTH_RELATED)
 		play_sound_with_parameters(actor, SOUND_KIND.HEALTH_RELATED, SOUND_HEALTH_BREATH_MODE.WOUNDED,
 			sound_index, SOUND_PAUSE_FACTOR.HEALTH_RELATED, true)
 		return
@@ -240,7 +235,7 @@ function handle_breathing_cycle(actor)
 
 		if sound_mode_avg > 2 and math.random() > 0.75 then
 			-- Play sweetener sound
-			local sound_index = tick_breath_sound_index(SOUND_KIND.STAMINA_RELATED_SWEETENER)
+			local sound_index = tick_sound_index(SOUND_KIND.STAMINA_RELATED_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
 				SOUND_PAUSE_FACTOR.STAMINA_RELATED)
 
@@ -248,7 +243,7 @@ function handle_breathing_cycle(actor)
 		end
 
 		local sound_mode = clamp(sound_mode_avg, 1, 2)
-		local sound_index = tick_breath_sound_index(SOUND_KIND.STAMINA_RELATED)
+		local sound_index = tick_sound_index(SOUND_KIND.STAMINA_RELATED)
 
 		printf("Playing stamina-related breathing sound with mode " ..
 			tostring(sound_mode) ..
@@ -282,15 +277,14 @@ function handle_breathing_cycle(actor)
 
 	if fear_factor > 0.7 and math.random() > 0.75 then
 		-- High distress, play fear sweetener.
-		local sound_index = tick_breath_sound_index(SOUND_KIND.FEAR_SWEETENER)
+		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
 			.EXTREME_DISTRESS)
-
 		return
 	end
 
 	-- Regular breathing
-	local sound_index = tick_breath_sound_index(SOUND_KIND.REGULAR)
+	local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
 	printf("Playing default breathing sound with mode " ..
 		tostring(sound_mode) .. " and index " .. tostring(sound_index) .. ".")
 
@@ -318,7 +312,7 @@ function play_sound_with_parameters(actor, kind, mode, index, pause_factor, shou
 end
 
 function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
-	local sound_path = sound_path_from_parameters(actor, kind, mode, index)
+	local sound_path = sound_path_from_parameters(actor, kind, nil, index)
 
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
