@@ -350,7 +350,7 @@ function actor_sound_volume(is_masked)
 	end
 
 	local amplifier = (is_masked or false) and 0.5 or 1
-	local jitter = opt.breathing_sound_volume_jitter * math.random(-50, 50) / 100
+	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter) / 2
 
 	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
 end
