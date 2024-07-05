@@ -487,7 +487,7 @@ function hook_functions()
 			end
 
 			-- Alter regular hurt sounds, block above higher health threshold.
-			if string.find(file, "hurt_bad") then
+			if string.find(file, "hurt_bad") or string.find(file, "hunger") or string.find(file, "thirst") or string.find(file, "tired") then
 				chance = chance / 4
 			elseif string.find(file, "hurt") then
 				if db.actor:health() > 0.5 then
@@ -498,7 +498,7 @@ function hook_functions()
 			end
 
 			-- Fix playback volume for player hurt sounds, remove dependency on player health.
-			if string.find(file, "hurt") then
+			if string.find(file, "hurt") or string.find(file, "sanity") then
 				sound_volume = 1.0
 			end
 
