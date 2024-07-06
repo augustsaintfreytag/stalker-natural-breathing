@@ -8,7 +8,6 @@ local is_mask_on = actor_effects.is_mask_on
 local SOUND_KIND = {
 	REGULAR = "breath",
 	FEAR_SWEETENER = "shiver",
-	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
 	STAMINA_RELATED_SWEETENER = "run_s",
@@ -31,11 +30,11 @@ local SOUND_RUN_BREATH_MODE = {
 }
 
 local SOUND_PAUSE_FACTOR = {
-	REGULAR = 1.5,
-	MODERATE_DISTRESS = 1.4,
-	EXTREME_DISTRESS = 1.4,
-	STAMINA_RELATED = 1.5,
-	HEALTH_RELATED = 1.4
+	REGULAR = 1.4,
+	MODERATE_DISTRESS = 1.3,
+	EXTREME_DISTRESS = 1.3,
+	STAMINA_RELATED = 1.3,
+	HEALTH_RELATED = 1.3
 }
 
 -- State
@@ -58,7 +57,6 @@ local sound_index_by_kind = {}
 local num_sounds_by_kind = {
 	[SOUND_KIND.REGULAR] = 8,
 	[SOUND_KIND.FEAR_SWEETENER] = 8,
-	[SOUND_KIND.GAS_MASK] = 8,
 	[SOUND_KIND.HEALTH_RELATED] = 8,
 	[SOUND_KIND.STAMINA_RELATED] = 6,
 	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7,
@@ -130,8 +128,8 @@ function init_options()
 	opt.residuality_time = 6000
 	opt.fear_factor_npc_detection_radius = 50
 
-	opt.breathing_sound_volume = 0.6
-	opt.breathing_sound_volume_jitter = 0.05
+	opt.breathing_sound_volume = 0.5
+	opt.breathing_sound_volume_jitter = 0.1
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -330,6 +328,7 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = actor_sound_volume()
+	sound_object_ref.frequency = actor_sound_frequency()
 
 	local current_time = time_global()
 	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
@@ -342,8 +341,15 @@ function play_extra_sound_with_parameters(actor, kind, index)
 	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
 	extra_sound_object_ref.volume = 0.5
 end
+
 function sound_path_from_parameters(actor, kind, mode, index)
-	local sound_name = kind .. "_" .. mode .. "_" .. index
+	local sound_name
+
+	if mode ~= nil then
+		sound_name = kind .. "_" .. mode .. "_" .. index
+	else
+		sound_name = kind .. "_" .. index
+	end
 
 	if is_mask_on(actor) or is_respi_on(actor) then
 		sound_name = "m_" .. sound_name
@@ -373,6 +379,10 @@ function actor_sound_volume(is_masked)
 	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter) / 2
 
 	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
+end
+
+function actor_sound_frequency()
+	return random_float(-0.1, 0.1)
 end
 
 -- Fear Factor
