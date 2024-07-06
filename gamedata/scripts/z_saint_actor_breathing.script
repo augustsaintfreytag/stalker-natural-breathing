@@ -95,6 +95,11 @@ function reset_breath_sound_index(kind)
 	sound_index_by_kind[kind] = 0
 end
 
+function random_sound_index(kind)
+	-- Allow random index picks for extra sounds (outside of breathing cycle).
+	return math.random(1, num_sounds_by_kind[kind])
+end
+
 -- Init
 
 function init_options()
@@ -264,6 +269,12 @@ function handle_breathing_cycle(actor)
 
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
+
+	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.75 then
+		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
+		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
+	end
 
 	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
 		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
