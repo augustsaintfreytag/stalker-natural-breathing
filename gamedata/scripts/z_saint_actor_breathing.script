@@ -366,7 +366,7 @@ function sound_path_from_parameters(actor, kind, mode, index)
 		sound_name = kind .. "_" .. index
 	end
 
-	if is_mask_on(actor) or is_respi_on(actor) then
+	if get_is_masked(actor) then
 		sound_name = "m_" .. sound_name
 	end
 
@@ -483,6 +483,11 @@ function get_psy_health()
 	end
 
 	return db.actor:psy_health()
+end
+
+
+function get_is_masked(actor)
+	return is_mask_on(actor) or is_respi_on(actor)
 end
 
 function get_number_of_nearby_threats()
