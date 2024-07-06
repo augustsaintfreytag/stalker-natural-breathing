@@ -341,8 +341,15 @@ function play_extra_sound_with_parameters(actor, kind, index)
 	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
 	extra_sound_object_ref.volume = 0.5
 end
+
 function sound_path_from_parameters(actor, kind, mode, index)
-	local sound_name = kind .. "_" .. mode .. "_" .. index
+	local sound_name
+
+	if mode ~= nil then
+		sound_name = kind .. "_" .. mode .. "_" .. index
+	else
+		sound_name = kind .. "_" .. index
+	end
 
 	if is_mask_on(actor) or is_respi_on(actor) then
 		sound_name = "m_" .. sound_name
