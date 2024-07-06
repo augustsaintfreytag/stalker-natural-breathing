@@ -227,7 +227,7 @@ function handle_breathing_cycle(actor)
 	end
 
 	-- Stamina
-	if actor.power < 0.9 and last_actor_speed_time > 0.5 then
+	if actor.power < 0.8 or last_actor_speed_time > 0.5 then
 		-- Player is running or low on stamina
 		local sound_mode_power = round(3 / (3 * actor.power))
 		local sound_mode_speed = round(3 * last_actor_speed_time / 44)
