@@ -38,6 +38,15 @@ local SOUND_PAUSE_FACTOR = {
 	HEALTH_RELATED = 1.3
 }
 
+local WEATHER_KIND = {
+	CLEAR = "clear",
+	PARTLY_CLOUDY = "partly",
+	CLOUDY = "cloudy",
+	FOGGY = "foggy",
+	RAINING = "rain",
+	STORM = "storm"
+}
+
 -- State
 
 local opt = {}
@@ -487,6 +496,12 @@ function get_psy_health()
 	return db.actor:psy_health()
 end
 
+function get_weather_kind()
+	local weather_manager = level_weathers.get_weather_manager()
+	local weather_kind = weather_manager:get_curr_weather()
+
+	return weather_kind
+end
 
 function get_is_masked(actor)
 	return is_mask_on(actor) or is_respi_on(actor)
