@@ -11,7 +11,8 @@ local SOUND_KIND = {
 	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
-	STAMINA_RELATED_SWEETENER = "run_s"
+	STAMINA_RELATED_SWEETENER = "run_s",
+	HALLUCINATIONS = "hallucinations"
 }
 
 local SOUND_REGULAR_BREATH_MODE = {
@@ -60,7 +61,8 @@ local num_sounds_by_kind = {
 	[SOUND_KIND.GAS_MASK] = 8,
 	[SOUND_KIND.HEALTH_RELATED] = 8,
 	[SOUND_KIND.STAMINA_RELATED] = 6,
-	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7
+	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7,
+	[SOUND_KIND.HALLUCINATIONS] = 5
 }
 
 -- Residuality means a mode is retained for some time after the condition is no longer met.
