@@ -184,7 +184,8 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Check residual sounds and play if found.
+	-- Residual Sound
+
 	for sound_kind, sound_record in pairs(sound_residual_cooldown_by_kind) do
 		do
 			if not sound_record or not sound_record.mode then
@@ -214,7 +215,8 @@ function handle_breathing_cycle(actor)
 		::continue::
 	end
 
-	-- Low Health
+	-- Health
+
 	if actor_health <= opt.health.level2 then
 		if actor_health <= opt.health.level1 and math.random() > 0.75 then
 			-- Player is critically wounded, play sweetener.
@@ -232,6 +234,7 @@ function handle_breathing_cycle(actor)
 	end
 
 	-- Stamina
+
 	if actor.power < 0.8 or last_actor_speed_time > 0.5 then
 		-- Player is running or low on stamina
 		local sound_mode_power = round(3 / (3 * actor.power))
@@ -260,12 +263,8 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Regular Breathing
-	local sound_mode = SOUND_REGULAR_BREATH_MODE.REGULAR
-	local sound_pause_factor = SOUND_PAUSE_FACTOR.REGULAR
-	local sound_should_reside = false
-
 	-- Fear Factor
+
 	local fear_factor = calculate_fear_factor()
 
 	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.75 then
