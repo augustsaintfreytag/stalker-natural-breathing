@@ -328,6 +328,7 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = actor_sound_volume()
+	sound_object_ref.frequency = actor_sound_frequency()
 
 	local current_time = time_global()
 	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
@@ -378,6 +379,10 @@ function actor_sound_volume(is_masked)
 	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter) / 2
 
 	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
+end
+
+function actor_sound_frequency()
+	return random_float(-0.1, 0.1)
 end
 
 -- Fear Factor
