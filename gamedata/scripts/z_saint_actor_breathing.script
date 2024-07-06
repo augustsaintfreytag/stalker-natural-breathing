@@ -128,8 +128,8 @@ function init_options()
 	opt.residuality_time = 6000
 	opt.fear_factor_npc_detection_radius = 50
 
-	opt.breathing_sound_volume = 0.6
-	opt.breathing_sound_volume_jitter = 0.05
+	opt.breathing_sound_volume = 0.5
+	opt.breathing_sound_volume_jitter = 0.1
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
