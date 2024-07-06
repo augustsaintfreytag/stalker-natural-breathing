@@ -11,7 +11,8 @@ local SOUND_KIND = {
 	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
-	STAMINA_RELATED_SWEETENER = "run_s"
+	STAMINA_RELATED_SWEETENER = "run_s",
+	HALLUCINATIONS = "hallucinations"
 }
 
 local SOUND_REGULAR_BREATH_MODE = {
@@ -60,7 +61,8 @@ local num_sounds_by_kind = {
 	[SOUND_KIND.GAS_MASK] = 8,
 	[SOUND_KIND.HEALTH_RELATED] = 8,
 	[SOUND_KIND.STAMINA_RELATED] = 6,
-	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7
+	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7,
+	[SOUND_KIND.HALLUCINATIONS] = 5
 }
 
 -- Residuality means a mode is retained for some time after the condition is no longer met.
@@ -91,6 +93,11 @@ end
 
 function reset_breath_sound_index(kind)
 	sound_index_by_kind[kind] = 0
+end
+
+function random_sound_index(kind)
+	-- Allow random index picks for extra sounds (outside of breathing cycle).
+	return math.random(1, num_sounds_by_kind[kind])
 end
 
 -- Init
@@ -263,6 +270,12 @@ function handle_breathing_cycle(actor)
 	-- Fear Factor
 	local fear_factor = calculate_fear_factor()
 
+	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.75 then
+		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
+		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
+	end
+
 	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
 		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
 		sound_mode = SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
@@ -322,6 +335,13 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
 end
 
+function play_extra_sound_with_parameters(actor, kind, index)
+	local sound_path = "actor\\" .. kind .. "_" .. index
+
+	local extra_sound_object_ref = sound_object(sound_path)
+	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
+	extra_sound_object_ref.volume = 0.5
+end
 function sound_path_from_parameters(actor, kind, mode, index)
 	local sound_name = kind .. "_" .. mode .. "_" .. index
 
