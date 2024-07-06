@@ -324,6 +324,13 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
 end
 
+function play_extra_sound_with_parameters(actor, kind, index)
+	local sound_path = "actor\\" .. kind .. "_" .. index
+
+	local extra_sound_object_ref = sound_object(sound_path)
+	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
+	extra_sound_object_ref.volume = 0.5
+end
 function sound_path_from_parameters(actor, kind, mode, index)
 	local sound_name = kind .. "_" .. mode .. "_" .. index
 
