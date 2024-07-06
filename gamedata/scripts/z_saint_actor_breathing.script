@@ -319,7 +319,21 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Regular breathing
+	-- Weather
+
+	local weather_kind = get_weather_kind()
+	if (not get_is_masked(actor)) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.9) then
+		-- If it's raining or storming, play rain-related sweeteners.
+		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
+		printf("Playing rain-related sweetener sound with weather " ..
+			weather_kind .. " and index " .. tostring(sound_index) .. ".")
+		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
+			.REGULAR, true)
+		return
+	end
+
+	-- Regular
+
 	local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
 	printf("Playing regular breathing sound with mode " ..
 		tostring(sound_mode) .. " and index " .. tostring(sound_index) .. ".")
