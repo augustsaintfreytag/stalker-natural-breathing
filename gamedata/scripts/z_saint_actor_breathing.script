@@ -278,13 +278,12 @@ function handle_breathing_cycle(actor)
 
 	local fear_factor = calculate_fear_factor()
 
-	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.75 then
+	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.9 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
 		printf("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
-		return
 	end
 
 	if fear_factor > 0.7 and math.random() > 0.75 then
