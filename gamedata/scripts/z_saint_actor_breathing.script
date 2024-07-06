@@ -8,7 +8,6 @@ local is_mask_on = actor_effects.is_mask_on
 local SOUND_KIND = {
 	REGULAR = "breath",
 	FEAR_SWEETENER = "shiver",
-	GAS_MASK = "gas_breath",
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
 	STAMINA_RELATED_SWEETENER = "run_s",
