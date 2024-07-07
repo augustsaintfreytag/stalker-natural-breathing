@@ -11,6 +11,7 @@ local SOUND_KIND = {
 	HEALTH_RELATED = "health",
 	STAMINA_RELATED = "run",
 	STAMINA_RELATED_SWEETENER = "run_s",
+	WEATHER_RAIN_SWEETENER = "weather_rain",
 	HALLUCINATIONS = "hallucinations"
 }
 
@@ -37,6 +38,15 @@ local SOUND_PAUSE_FACTOR = {
 	HEALTH_RELATED = 1.3
 }
 
+local WEATHER_KIND = {
+	CLEAR = "clear",
+	PARTLY_CLOUDY = "partly",
+	CLOUDY = "cloudy",
+	FOGGY = "foggy",
+	RAINING = "rain",
+	STORM = "storm"
+}
+
 -- State
 
 local opt = {}
@@ -60,6 +70,7 @@ local num_sounds_by_kind = {
 	[SOUND_KIND.HEALTH_RELATED] = 8,
 	[SOUND_KIND.STAMINA_RELATED] = 6,
 	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7,
+	[SOUND_KIND.WEATHER_RAIN_SWEETENER] = 5,
 	[SOUND_KIND.HALLUCINATIONS] = 5
 }
 
@@ -128,8 +139,9 @@ function init_options()
 	opt.residuality_time = 6000
 	opt.fear_factor_npc_detection_radius = 50
 
-	opt.breathing_sound_volume = 0.5
+	opt.breathing_sound_volume = 0.4
 	opt.breathing_sound_volume_jitter = 0.1
+	opt.breathing_sound_pitch_jitter = 0.1
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -184,7 +196,8 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Check residual sounds and play if found.
+	-- Residual Sound
+
 	for sound_kind, sound_record in pairs(sound_residual_cooldown_by_kind) do
 		do
 			if not sound_record or not sound_record.mode then
@@ -214,7 +227,8 @@ function handle_breathing_cycle(actor)
 		::continue::
 	end
 
-	-- Low Health
+	-- Health
+
 	if actor_health <= opt.health.level2 then
 		if actor_health <= opt.health.level1 and math.random() > 0.75 then
 			-- Player is critically wounded, play sweetener.
@@ -232,6 +246,7 @@ function handle_breathing_cycle(actor)
 	end
 
 	-- Stamina
+
 	if actor.power < 0.8 or last_actor_speed_time > 0.5 then
 		-- Player is running or low on stamina
 		local sound_mode_power = round(3 / (3 * actor.power))
@@ -260,43 +275,67 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Regular Breathing
-	local sound_mode = SOUND_REGULAR_BREATH_MODE.REGULAR
-	local sound_pause_factor = SOUND_PAUSE_FACTOR.REGULAR
-	local sound_should_reside = false
-
 	-- Fear Factor
+
 	local fear_factor = calculate_fear_factor()
 
-	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.75 then
+	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.9 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		printf("Playing fear-related hallucinations extra sound with factor " ..
+			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
-	end
-
-	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
-		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
-		sound_mode = SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS
-		sound_pause_factor = SOUND_PAUSE_FACTOR.EXTREME_DISTRESS
-		sound_should_reside = true
-	elseif fear_factor > 0.3 then
-		-- If fear is moderate, switch to moderate distress for elevated breathing.
-		sound_mode = SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS
-		sound_pause_factor = SOUND_PAUSE_FACTOR.MODERATE_DISTRESS
-		sound_should_reside = true
 	end
 
 	if fear_factor > 0.7 and math.random() > 0.75 then
 		-- High distress, play fear sweetener.
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
+		printf("Playing high fear factor sweetener sound with factor " ..
+			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
 			.EXTREME_DISTRESS)
 		return
 	end
 
-	-- Regular breathing
+	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
+		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
+		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
+		printf("Playing high fear factor regular breathing sound with factor " ..
+			fear_factor .. " and index " .. tostring(sound_index) .. ".")
+		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
+			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
+			true)
+		return
+	end
+
+	if fear_factor > 0.3 then
+		-- If fear is moderate, switch to moderate distress for elevated breathing.
+		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
+		printf("Playing low fear factor regular breathing sound with factor " ..
+			fear_factor .. " and index " .. tostring(sound_index) .. ".")
+		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS, sound_index,
+			SOUND_PAUSE_FACTOR.MODERATE_DISTRESS,
+			true)
+		return
+	end
+
+	-- Weather
+
+	local weather_kind = get_weather_kind()
+	if (not get_is_masked(actor)) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.9) then
+		-- If it's raining or storming, play rain-related sweeteners.
+		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
+		printf("Playing rain-related sweetener sound with weather " ..
+			weather_kind .. " and index " .. tostring(sound_index) .. ".")
+		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
+			.REGULAR, true)
+		return
+	end
+
+	-- Regular
+
 	local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
-	printf("Playing default breathing sound with mode " ..
+	printf("Playing regular breathing sound with mode " ..
 		tostring(sound_mode) .. " and index " .. tostring(sound_index) .. ".")
 
 	play_sound_with_parameters(actor, SOUND_KIND.REGULAR, sound_mode, sound_index, sound_pause_factor,
@@ -351,7 +390,7 @@ function sound_path_from_parameters(actor, kind, mode, index)
 		sound_name = kind .. "_" .. index
 	end
 
-	if is_mask_on(actor) or is_respi_on(actor) then
+	if get_is_masked(actor) then
 		sound_name = "m_" .. sound_name
 	end
 
@@ -375,14 +414,15 @@ function actor_sound_volume(is_masked)
 		return 0
 	end
 
-	local amplifier = (is_masked or false) and 0.5 or 1
-	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter) / 2
+	-- local amplifier = (is_masked or false) and 0.5 or 1 -- Remove this?
+	local amplifier = 1
+	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter)
 
 	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
 end
 
 function actor_sound_frequency()
-	return random_float(-0.1, 0.1)
+	return random_float(-opt.breathing_sound_pitch_jitter, opt.breathing_sound_pitch_jitter)
 end
 
 -- Fear Factor
@@ -468,6 +508,17 @@ function get_psy_health()
 	end
 
 	return db.actor:psy_health()
+end
+
+function get_weather_kind()
+	local weather_manager = level_weathers.get_weather_manager()
+	local weather_kind = weather_manager:get_curr_weather()
+
+	return weather_kind
+end
+
+function get_is_masked(actor)
+	return is_mask_on(actor) or is_respi_on(actor)
 end
 
 function get_number_of_nearby_threats()
