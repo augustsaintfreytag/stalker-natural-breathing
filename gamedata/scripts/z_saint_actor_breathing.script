@@ -259,19 +259,21 @@ function handle_breathing_cycle(actor)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
 				SOUND_PAUSE_FACTOR.STAMINA_RELATED)
 
+			printf("Playing stamina-related sweetener sound with mode average " .. sound_mode_avg .. " and index " ..
+				sound_index .. ".")
 			return
 		end
 
 		local sound_mode = clamp(sound_mode_avg, 1, 2)
 		local sound_index = tick_sound_index(SOUND_KIND.STAMINA_RELATED)
 
+		play_sound_with_parameters(actor, SOUND_KIND.STAMINA_RELATED, sound_mode, sound_index,
+			SOUND_PAUSE_FACTOR.STAMINA_RELATED, true)
 		printf("Playing stamina-related breathing sound with mode " ..
 			tostring(sound_mode) ..
 			" and index " ..
 			tostring(sound_index) ..
 			" (stamina " .. tostring(actor.power) .. ", last speed time " .. tostring(last_actor_speed_time) .. ").")
-		play_sound_with_parameters(actor, SOUND_KIND.STAMINA_RELATED, sound_mode, sound_index, SOUND_PAUSE_FACTOR
-			.STAMINA_RELATED, true)
 		return
 	end
 
@@ -282,40 +284,40 @@ function handle_breathing_cycle(actor)
 	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.9 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
 		printf("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
-		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
 	end
 
 	if fear_factor > 0.7 and math.random() > 0.75 then
 		-- High distress, play fear sweetener.
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
-		printf("Playing high fear factor sweetener sound with factor " ..
-			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
 			.EXTREME_DISTRESS)
+		printf("Playing high fear factor sweetener sound with factor " ..
+			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		return
 	end
 
 	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
 		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
 		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
-		printf("Playing high fear factor regular breathing sound with factor " ..
-			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
 			true)
+		printf("Playing high fear factor regular breathing sound with factor " ..
+			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
 
 	if fear_factor > 0.3 then
 		-- If fear is moderate, switch to moderate distress for elevated breathing.
 		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
-		printf("Playing low fear factor regular breathing sound with factor " ..
-			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.MODERATE_DISTRESS,
 			true)
+		printf("Playing low fear factor regular breathing sound with factor " ..
+			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
 
@@ -335,11 +337,10 @@ function handle_breathing_cycle(actor)
 	-- Regular
 
 	local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
-	printf("Playing regular breathing sound with mode " ..
-		tostring(sound_mode) .. " and index " .. tostring(sound_index) .. ".")
+	play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.REGULAR, sound_index,
+		SOUND_PAUSE_FACTOR.REGULAR, false)
 
-	play_sound_with_parameters(actor, SOUND_KIND.REGULAR, sound_mode, sound_index, sound_pause_factor,
-		sound_should_reside)
+	printf("Playing regular breathing sound with index " .. tostring(sound_index) .. ".")
 end
 
 -- Sound Playback
