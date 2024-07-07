@@ -352,10 +352,8 @@ function play_sound_with_parameters(actor, kind, mode, index, pause_factor, shou
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = actor_sound_volume()
 
-	local current_time = time_global()
-	local sound_duration = sound_object_ref:length() or 800
-
-	sound_cooldown_time = current_time + sound_duration * pause_factor
+	local sound_duration = sound_object_ref:length() or 1000
+	suspend_next_breathing(sound_duration * pause_factor)
 
 	if should_reside then
 		register_residual_sound(kind, mode, pause_factor)
@@ -370,8 +368,8 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_object_ref.volume = actor_sound_volume()
 	sound_object_ref.frequency = actor_sound_frequency()
 
-	local current_time = time_global()
-	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
+	local sound_duration = sound_object_ref:length() or 1000
+	suspend_next_breathing(sound_duration * pause_factor)
 end
 
 function play_extra_sound_with_parameters(actor, kind, index)
@@ -380,6 +378,31 @@ function play_extra_sound_with_parameters(actor, kind, index)
 	local extra_sound_object_ref = sound_object(sound_path)
 	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
 	extra_sound_object_ref.volume = 0.5
+end
+
+-- Sound Suspension
+
+function stop_and_suspend_breathing(cooldown)
+	suspend_next_breathing(cooldown)
+
+	if sound_object_ref then
+		sound_object_ref:stop()
+	end
+end
+
+function suspend_next_breathing(cooldown)
+	local current_time = time_global()
+	sound_action_cooldown_time = current_time + cooldown
+end
+
+-- Sound Residuality
+
+function register_residual_sound(kind, mode, pause_factor)
+	sound_residual_cooldown_by_kind[kind] = {
+		mode = mode,
+		pause_factor = pause_factor,
+		time = time_global() + opt.residuality_time
+	}
 end
 
 -- Sound Utilities
@@ -398,16 +421,6 @@ function sound_path_from_parameters(kind, mode, index)
 	end
 
 	return "actor\\" .. sound_name
-end
-
--- Residual Sound Registration
-
-function register_residual_sound(kind, mode, pause_factor)
-	sound_residual_cooldown_by_kind[kind] = {
-		mode = mode,
-		pause_factor = pause_factor,
-		time = time_global() + opt.residuality_time
-	}
 end
 
 -- Sound Metadata
@@ -610,11 +623,7 @@ function hook_functions()
 
 			printf("Muting and suspending breathing, voiced actor sound playback '" ..
 				file .. "' for total cooldown " .. cooldown + opt.speaking_cooldown .. "ms.")
-			sound_action_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
-
-			if sound_object_ref then
-				sound_object_ref.volume = 0
-			end
+			stop_and_suspend_breathing(cooldown + opt.speaking_cooldown)
 
 			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
 				is_state)
@@ -626,7 +635,7 @@ function hook_functions()
 		actor_effects.play_item_fx = function(item)
 			printf("Player used item (via play item fx), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
-			sound_action_cooldown_time = time_global() + opt.item_use_cooldown
+			suspend_next_breathing(opt.item_use_cooldown)
 			original_play_item_fx(item)
 		end
 	end
@@ -636,7 +645,7 @@ function hook_functions()
 		enhanced_animations.start_anim = function(anim_section_hud)
 			printf("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
-			sound_action_cooldown_time = time_global() + opt.item_use_cooldown
+			suspend_next_breathing(opt.item_use_cooldown)
 			original_start_anim(anim_section_hud)
 		end
 	end
