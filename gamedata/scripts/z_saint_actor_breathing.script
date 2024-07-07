@@ -346,7 +346,7 @@ end
 -- Sound Playback
 
 function play_sound_with_parameters(actor, kind, mode, index, pause_factor, should_reside)
-	local sound_path = sound_path_from_parameters(actor, kind, mode, index)
+	local sound_path = sound_path_from_parameters(kind, mode, index)
 
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
@@ -363,7 +363,7 @@ function play_sound_with_parameters(actor, kind, mode, index, pause_factor, shou
 end
 
 function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
-	local sound_path = sound_path_from_parameters(actor, kind, nil, index)
+	local sound_path = sound_path_from_parameters(kind, nil, index)
 
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
@@ -382,7 +382,9 @@ function play_extra_sound_with_parameters(actor, kind, index)
 	extra_sound_object_ref.volume = 0.5
 end
 
-function sound_path_from_parameters(actor, kind, mode, index)
+-- Sound Utilities
+
+function sound_path_from_parameters(kind, mode, index)
 	local sound_name
 
 	if mode ~= nil then
@@ -410,7 +412,7 @@ end
 
 -- Sound Metadata
 
-function actor_sound_volume(is_masked)
+function actor_sound_volume()
 	if last_cam_dist > opt.cam_dist then
 		return 0
 	end
