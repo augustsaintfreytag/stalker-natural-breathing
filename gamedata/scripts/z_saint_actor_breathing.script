@@ -435,15 +435,18 @@ function calculate_fear_factor()
 	local is_surge = get_is_surge()
 	local is_in_safe_space = get_is_in_safe_space()
 	local psy_health = get_psy_health()
-	local number_of_nearby_threats = get_number_of_nearby_threats()
+	local nearby_threats = get_number_of_nearby_threats()
+	local number_of_hostile_npcs = nearby_threats.npcs
+	local number_of_monsters = nearby_threats.monsters
 
 	local fear_value = 0
 
-	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 4)
 	fear_value = fear_value + clamp((1 / psy_health - 1), 0, 5)
 
 	if is_in_combat then
-		fear_value = fear_value + 2
+		fear_value = fear_value + 1
+		fear_value = fear_value + clamp(number_of_hostile_npcs, 0, 4) / 4
+		fear_value = fear_value + clamp(number_of_monsters, 0, 4)
 	end
 
 	if is_night then
@@ -525,17 +528,20 @@ end
 
 function get_number_of_nearby_threats()
 	local max_radius = opt.fear_factor_npc_detection_radius
-	local npc_list = {}
+	local number_of_hostile_npcs = 0
+	local number_of_monsters = 0
 
 	level.iterate_nearest(db.actor:position(), max_radius, function(obj)
-		if (IsStalker(obj) or IsMonster(obj)) and obj:alive() and obj:relation(db.actor) == game_object.enemy then
-			table.insert(npc_list, {
-				id = obj:id()
-			})
+		if IsMonster(obj) and obj:alive() then
+			number_of_monsters = number_of_monsters + 1
+		end
+
+		if IsStalker(obj) and obj:alive() and obj:relation(db.actor) == game_object.enemy then
+			number_of_hostile_npcs = number_of_hostile_npcs + 1
 		end
 	end)
 
-	return #npc_list
+	return { npcs = number_of_hostile_npcs, monsters = number_of_monsters }
 end
 
 -- Utility
