@@ -475,7 +475,10 @@ function calculate_fear_factor()
 		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
 		tostring(is_underground) ..
 		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-		", psy health: " .. tostring(psy_health) .. ", nearby threats: " .. tostring(number_of_nearby_threats) .. ").")
+		", psy health: " ..
+		tostring(psy_health) ..
+		", nearby hostiles: " ..
+		tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
 	return fear_factor
 end
