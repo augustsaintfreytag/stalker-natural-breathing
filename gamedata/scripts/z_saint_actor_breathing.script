@@ -391,7 +391,7 @@ function sound_path_from_parameters(actor, kind, mode, index)
 		sound_name = kind .. "_" .. index
 	end
 
-	if get_is_masked(actor) then
+	if get_is_masked() then
 		sound_name = "m_" .. sound_name
 	end
 
@@ -518,7 +518,8 @@ function get_weather_kind()
 	return weather_kind
 end
 
-function get_is_masked(actor)
+function get_is_masked()
+	local actor = db.actor
 	return is_mask_on(actor) or is_respi_on(actor)
 end
 
