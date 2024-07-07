@@ -324,13 +324,13 @@ function handle_breathing_cycle(actor)
 	-- Weather
 
 	local weather_kind = get_weather_kind()
-	if (not get_is_masked(actor)) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.9) then
+	if (not get_is_masked()) and (not get_is_in_safe_space()) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.9) then
 		-- If it's raining or storming, play rain-related sweeteners.
 		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
-		printf("Playing rain-related sweetener sound with weather " ..
-			weather_kind .. " and index " .. tostring(sound_index) .. ".")
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
 			.REGULAR, true)
+		printf("Playing rain-related sweetener sound with weather " ..
+			weather_kind .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
 
@@ -435,15 +435,18 @@ function calculate_fear_factor()
 	local is_surge = get_is_surge()
 	local is_in_safe_space = get_is_in_safe_space()
 	local psy_health = get_psy_health()
-	local number_of_nearby_threats = get_number_of_nearby_threats()
+	local nearby_threats = get_number_of_nearby_threats()
+	local number_of_hostile_npcs = nearby_threats.npcs
+	local number_of_monsters = nearby_threats.monsters
 
 	local fear_value = 0
 
-	fear_value = fear_value + clamp(number_of_nearby_threats, 0, 4)
 	fear_value = fear_value + clamp((1 / psy_health - 1), 0, 5)
 
 	if is_in_combat then
-		fear_value = fear_value + 2
+		fear_value = fear_value + 1
+		fear_value = fear_value + clamp(number_of_hostile_npcs, 0, 4) / 4
+		fear_value = fear_value + clamp(number_of_monsters, 0, 4)
 	end
 
 	if is_night then
@@ -472,7 +475,10 @@ function calculate_fear_factor()
 		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
 		tostring(is_underground) ..
 		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-		", psy health: " .. tostring(psy_health) .. ", nearby threats: " .. tostring(number_of_nearby_threats) .. ").")
+		", psy health: " ..
+		tostring(psy_health) ..
+		", nearby hostiles: " ..
+		tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
 	return fear_factor
 end
@@ -525,17 +531,20 @@ end
 
 function get_number_of_nearby_threats()
 	local max_radius = opt.fear_factor_npc_detection_radius
-	local npc_list = {}
+	local number_of_hostile_npcs = 0
+	local number_of_monsters = 0
 
 	level.iterate_nearest(db.actor:position(), max_radius, function(obj)
-		if (IsStalker(obj) or IsMonster(obj)) and obj:alive() and obj:relation(db.actor) == game_object.enemy then
-			table.insert(npc_list, {
-				id = obj:id()
-			})
+		if IsMonster(obj) and obj:alive() then
+			number_of_monsters = number_of_monsters + 1
+		end
+
+		if IsStalker(obj) and obj:alive() and obj:relation(db.actor) == game_object.enemy then
+			number_of_hostile_npcs = number_of_hostile_npcs + 1
 		end
 	end)
 
-	return #npc_list
+	return { npcs = number_of_hostile_npcs, monsters = number_of_monsters }
 end
 
 -- Utility
