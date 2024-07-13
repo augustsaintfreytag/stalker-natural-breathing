@@ -249,13 +249,13 @@ function handle_breathing_cycle(actor)
 
 	-- Stamina
 
-	if actor.power < 0.8 or last_actor_speed_time > 0.5 then
+	if actor.power < 0.5 or last_actor_speed_time > 0.25 then
 		-- Player is running or low on stamina
-		local sound_mode_power = round(3 / (3 * actor.power))
-		local sound_mode_speed = round(3 * last_actor_speed_time / 44)
+		local sound_mode_power = round(2.5 / (2.5 * actor.power))
+		local sound_mode_speed = round(3 * last_actor_speed_time / 30)
 		local sound_mode_avg = round((sound_mode_power + sound_mode_speed) / 2)
 
-		if sound_mode_avg > 2 and math.random() > 0.75 then
+		if sound_mode_avg > 1 and math.random() > 0.8 then
 			-- Play sweetener sound
 			local sound_index = tick_sound_index(SOUND_KIND.STAMINA_RELATED_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
