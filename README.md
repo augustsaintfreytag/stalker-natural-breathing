@@ -22,8 +22,12 @@ This mod includes the following features:
   - Even if a character has restored stamina and could run again, their heartrate would still be elevated.
   - Prevents odd single breaths, e.g. when hitting a stamina threshold, getting one exhausted sound, then a calm one again.
 - Significantly cleans up playback system, add types for modes, add reusable logic for cycles.
+- Intercepts voiced actor framework sounds to make them consistent in volume.
+- Automatically suspends breathing for item use sounds and voiced actor callouts.
 
 Notes for *mod developers*: This mod hooks into the Voiced Actor Framework (if present) to automatically detect actor voice lines and suspends breathing cycle until other vocalizations are finished. The mod also detects item usage and suspends to allow item sounds (e.g. eating, drinking, meds) to play that usually already include actor sounds.
+
+## Modding
 
 To make your mod compatible with Natural Breathing, you can call the following functions from your mod.
 
