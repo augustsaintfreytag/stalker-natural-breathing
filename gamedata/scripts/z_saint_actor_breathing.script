@@ -610,9 +610,9 @@ function hook_functions()
 				sound_volume = opt.speaking_default_sound_volume
 			end
 
-			-- Fix playback volume for player hurt sounds, remove dependency on player health.
-			if string.find(file, "hurt") or string.find(file, "sanity") then
-				sound_volume = 1.0
+			-- Fix sounds using masked variant when player is not wearing a mask.
+			if string.find(file, "\\m_") and not get_is_masked() then
+				file = file:gsub("\\m_", "\\")
 			end
 
 			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush, fix playback volume.
