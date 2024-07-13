@@ -134,9 +134,12 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 1000
+	opt.speaking_default_sound_volume = 1.5
+	opt.body_noises_default_sound_volume = 0.6
+
 	opt.item_use_cooldown = 6000
 	opt.hit_distress_cooldown = 10000
-	opt.residuality_time = 6000
+	opt.residuality_time = 8000
 	opt.fear_factor_npc_detection_radius = 50
 
 	opt.breathing_sound_volume = 0.4
@@ -208,11 +211,11 @@ function handle_breathing_cycle(actor)
 				local sound_index = tick_sound_index(sound_kind)
 				play_sound_with_parameters(actor, sound_kind, sound_record.mode, sound_index, sound_record.pause_factor)
 
-				printf("Playing residual sound of kind '" ..
+				log("Playing residual sound of kind '" ..
 					sound_kind .. "' with mode " .. sound_record.mode .. " and index " ..
 					sound_index .. " (expiration in " .. sound_record.time - current_time .. "ms).")
 			else
-				printf("Clearing residual sound of kind '" ..
+				log("Clearing residual sound of kind '" ..
 					sound_kind ..
 					"' with mode " ..
 					sound_record.mode .. " (expired since " .. current_time - sound_record.time .. "ms).")
@@ -247,19 +250,19 @@ function handle_breathing_cycle(actor)
 
 	-- Stamina
 
-	if actor.power < 0.8 or last_actor_speed_time > 0.5 then
+	if actor.power < 0.5 or last_actor_speed_time > 0.25 then
 		-- Player is running or low on stamina
-		local sound_mode_power = round(3 / (3 * actor.power))
-		local sound_mode_speed = round(3 * last_actor_speed_time / 44)
+		local sound_mode_power = round(2.5 / (2.5 * actor.power))
+		local sound_mode_speed = round(3 * last_actor_speed_time / 30)
 		local sound_mode_avg = round((sound_mode_power + sound_mode_speed) / 2)
 
-		if sound_mode_avg > 2 and math.random() > 0.75 then
+		if sound_mode_avg > 1 and math.random() > 0.8 then
 			-- Play sweetener sound
 			local sound_index = tick_sound_index(SOUND_KIND.STAMINA_RELATED_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
 				SOUND_PAUSE_FACTOR.STAMINA_RELATED)
 
-			printf("Playing stamina-related sweetener sound with mode average " .. sound_mode_avg .. " and index " ..
+			log("Playing stamina-related sweetener sound with mode average " .. sound_mode_avg .. " and index " ..
 				sound_index .. ".")
 			return
 		end
@@ -269,7 +272,7 @@ function handle_breathing_cycle(actor)
 
 		play_sound_with_parameters(actor, SOUND_KIND.STAMINA_RELATED, sound_mode, sound_index,
 			SOUND_PAUSE_FACTOR.STAMINA_RELATED, true)
-		printf("Playing stamina-related breathing sound with mode " ..
+		log("Playing stamina-related breathing sound with mode " ..
 			tostring(sound_mode) ..
 			" and index " ..
 			tostring(sound_index) ..
@@ -285,7 +288,7 @@ function handle_breathing_cycle(actor)
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
-		printf("Playing fear-related hallucinations extra sound with factor " ..
+		log("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 	end
 
@@ -294,7 +297,7 @@ function handle_breathing_cycle(actor)
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
 			.EXTREME_DISTRESS)
-		printf("Playing high fear factor sweetener sound with factor " ..
+		log("Playing high fear factor sweetener sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -305,7 +308,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
 			true)
-		printf("Playing high fear factor regular breathing sound with factor " ..
+		log("Playing high fear factor regular breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -316,7 +319,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.MODERATE_DISTRESS,
 			true)
-		printf("Playing low fear factor regular breathing sound with factor " ..
+		log("Playing low fear factor regular breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -329,7 +332,7 @@ function handle_breathing_cycle(actor)
 		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
 			.REGULAR, true)
-		printf("Playing rain-related sweetener sound with weather " ..
+		log("Playing rain-related sweetener sound with weather " ..
 			weather_kind .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -340,22 +343,20 @@ function handle_breathing_cycle(actor)
 	play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.REGULAR, sound_index,
 		SOUND_PAUSE_FACTOR.REGULAR, false)
 
-	printf("Playing regular breathing sound with index " .. tostring(sound_index) .. ".")
+	log("Playing regular breathing sound with index " .. tostring(sound_index) .. ".")
 end
 
 -- Sound Playback
 
 function play_sound_with_parameters(actor, kind, mode, index, pause_factor, should_reside)
-	local sound_path = sound_path_from_parameters(actor, kind, mode, index)
+	local sound_path = sound_path_from_parameters(kind, mode, index)
 
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = actor_sound_volume()
 
-	local current_time = time_global()
-	local sound_duration = sound_object_ref:length() or 800
-
-	sound_cooldown_time = current_time + sound_duration * pause_factor
+	local sound_duration = sound_object_ref:length() or 1000
+	suspend_next_breathing(sound_duration * pause_factor)
 
 	if should_reside then
 		register_residual_sound(kind, mode, pause_factor)
@@ -363,15 +364,15 @@ function play_sound_with_parameters(actor, kind, mode, index, pause_factor, shou
 end
 
 function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
-	local sound_path = sound_path_from_parameters(actor, kind, nil, index)
+	local sound_path = sound_path_from_parameters(kind, nil, index)
 
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = actor_sound_volume()
 	sound_object_ref.frequency = actor_sound_frequency()
 
-	local current_time = time_global()
-	sound_cooldown_time = current_time + sound_object_ref:length() or 1000 * pause_factor
+	local sound_duration = sound_object_ref:length() or 1000
+	suspend_next_breathing(sound_duration * pause_factor)
 end
 
 function play_extra_sound_with_parameters(actor, kind, index)
@@ -382,7 +383,34 @@ function play_extra_sound_with_parameters(actor, kind, index)
 	extra_sound_object_ref.volume = 0.5
 end
 
-function sound_path_from_parameters(actor, kind, mode, index)
+-- Sound Suspension
+
+function stop_and_suspend_breathing(cooldown)
+	suspend_next_breathing(cooldown)
+
+	if sound_object_ref then
+		sound_object_ref:stop()
+	end
+end
+
+function suspend_next_breathing(cooldown)
+	local current_time = time_global()
+	sound_action_cooldown_time = current_time + cooldown
+end
+
+-- Sound Residuality
+
+function register_residual_sound(kind, mode, pause_factor)
+	sound_residual_cooldown_by_kind[kind] = {
+		mode = mode,
+		pause_factor = pause_factor,
+		time = time_global() + opt.residuality_time
+	}
+end
+
+-- Sound Utilities
+
+function sound_path_from_parameters(kind, mode, index)
 	local sound_name
 
 	if mode ~= nil then
@@ -398,28 +426,16 @@ function sound_path_from_parameters(actor, kind, mode, index)
 	return "actor\\" .. sound_name
 end
 
--- Residual Sound Registration
-
-function register_residual_sound(kind, mode, pause_factor)
-	sound_residual_cooldown_by_kind[kind] = {
-		mode = mode,
-		pause_factor = pause_factor,
-		time = time_global() + opt.residuality_time
-	}
-end
-
 -- Sound Metadata
 
-function actor_sound_volume(is_masked)
+function actor_sound_volume()
 	if last_cam_dist > opt.cam_dist then
 		return 0
 	end
 
-	-- local amplifier = (is_masked or false) and 0.5 or 1 -- Remove this?
-	local amplifier = 1
 	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter)
 
-	return (1 - last_cam_dist / opt.cam_dist) * amplifier * opt.breathing_sound_volume + jitter
+	return (1 - last_cam_dist / opt.cam_dist) * opt.breathing_sound_volume + jitter
 end
 
 function actor_sound_frequency()
@@ -467,7 +483,7 @@ function calculate_fear_factor()
 
 	local fear_factor = clamp(fear_value / 10, 0, 1)
 
-	printf("Calculated aggregate player fear factor: " ..
+	log("Calculated aggregate player fear factor: " ..
 		tostring(fear_factor) ..
 		" (from value " ..
 		fear_value ..
@@ -579,7 +595,12 @@ function hook_functions()
 			end
 
 			-- Alter regular hurt sounds, block above higher health threshold.
-			if string.find(file, "hurt_bad") or string.find(file, "hunger") or string.find(file, "thirst") or string.find(file, "tired") then
+			if string.find(file, "hunger") or string.find(file, "thirst") then
+				chance = chance / 4
+				sound_volume = opt.body_noises_default_sound_volume
+			elseif string.find(file, "tired") then
+				chance = chance / 4
+			elseif string.find(file, "sanity") then
 				chance = chance / 4
 			elseif string.find(file, "hurt") then
 				if db.actor:health() > 0.5 then
@@ -587,15 +608,17 @@ function hook_functions()
 				end
 
 				chance = chance / 4
+				sound_volume = opt.speaking_default_sound_volume
 			end
 
-			-- Fix playback volume for player hurt sounds, remove dependency on player health.
-			if string.find(file, "hurt") or string.find(file, "sanity") then
-				sound_volume = 1.0
+			-- Fix sounds using masked variant when player is not wearing a mask.
+			if string.find(file, "\\m_") and not get_is_masked() then
+				file = file:gsub("\\m_", "\\")
 			end
 
-			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush.
+			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush, fix playback volume.
 			if string.find(file, "pain") then
+				sound_volume = opt.speaking_default_sound_volume
 				last_actor_hit_time = time_global()
 			end
 
@@ -606,13 +629,9 @@ function hook_functions()
 				return
 			end
 
-			printf("Muting and suspending breathing, voiced actor sound playback '" ..
+			log("Muting and suspending breathing, voiced actor sound playback '" ..
 				file .. "' for total cooldown " .. cooldown + opt.speaking_cooldown .. "ms.")
-			sound_action_cooldown_time = time_global() + cooldown + opt.speaking_cooldown
-
-			if sound_object_ref then
-				sound_object_ref.volume = 0
-			end
+			stop_and_suspend_breathing(cooldown + opt.speaking_cooldown)
 
 			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
 				is_state)
@@ -622,9 +641,9 @@ function hook_functions()
 	if actor_effects then
 		local original_play_item_fx = actor_effects.play_item_fx
 		actor_effects.play_item_fx = function(item)
-			printf("Player used item (via play item fx), setting action cooldown time to " ..
+			log("Player used item (via play item fx), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
-			sound_action_cooldown_time = time_global() + opt.item_use_cooldown
+			suspend_next_breathing(opt.item_use_cooldown)
 			original_play_item_fx(item)
 		end
 	end
@@ -632,12 +651,17 @@ function hook_functions()
 	if enhanced_animations then
 		local original_start_anim = enhanced_animations.start_anim
 		enhanced_animations.start_anim = function(anim_section_hud)
-			printf("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
+			log("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
-			sound_action_cooldown_time = time_global() + opt.item_use_cooldown
+			suspend_next_breathing(opt.item_use_cooldown)
 			original_start_anim(anim_section_hud)
 		end
 	end
+end
+
+function log(message)
+	-- Debugging disabled
+	-- printf(message)
 end
 
 function on_game_start()

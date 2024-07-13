@@ -6,27 +6,46 @@ A natural breathing sound system mod for STALKER Anomaly (Open X-Ray/Monolith en
 
 Compatible with Voiced Actor Framework by Ayykyu (https://www.moddb.com/members/ayykyu/addons). Primarily designed for War Nymph by Isthar (https://www.moddb.com/mods/stalker-anomaly/addons/war-nymph) and LASS (Ladies and Sister Stalkers) by Paint_Thinner (https://github.com/Paint-Thinner/Ladies-and-Sister-Stalkers-LASS).
 
-> [!WARNING]
-> This mod is in active development and not yet functional.
-> You may install this mod for personal testing on your own risk.
-> This warning will be removed once the mod is completed.
-
 ## Features
 
 This mod includes the following features:
 
-- Introduces a *reactive breathing system* for the player character
-- Breathing system adopts existing logic for gas mask breathing (hooking into actor effects)
-- Regular breathing (not wounded, not low on stamina) has three modes: default, distress, and fear
-- Introduces a *fear factor* system to determine if the character is in a high stress environment
-  - Assigns fear points for safe space, night time, underground, hostile NPCs nearby, in combat, emission imminent
-  - The higher the calculated fear factor is, the more elevated the breathing becomes (3 stages)
-- Introduces high quality custom-made female breathing sounds
-  - New sounds cover calm (3 modes), low stamina/running (3 modes), and low health (2 modes)
-- Implements a system for residual sounds where one state can persist for a while even if conditions change
-  - Even if a character has restored stamina and could run again, their heartrate would still be elevated
-  - Prevents odd single breaths, e.g. when hitting a stamina threshold, getting one exhausted sound, then a calm one again
-- Significantly cleans up playback system, add types for modes, add reusable logic for cycles
+- Introduces a *reactive breathing system* for the player character.
+- Breathing system adopts existing logic for gas mask breathing (hooking into actor effects).
+- Regular breathing (not wounded, not low on stamina) has three modes: default, distress, and fear.
+- Introduces a *fear factor* system to determine if the character is in a high stress environment.
+  - Assigns fear points for safe space, night time, underground, hostile NPCs nearby, in combat, emission imminent.
+  - The higher the calculated fear factor is, the more elevated the breathing becomes (3 stages).
+- Introduces high quality custom-made female breathing sounds.
+  - New sounds cover calm (3 modes), low stamina/running (3 modes), and low health (2 modes).
+- Implements a system for residual sounds where one state can persist for a while even if conditions change.
+  - Even if a character has restored stamina and could run again, their heartrate would still be elevated.
+  - Prevents odd single breaths, e.g. when hitting a stamina threshold, getting one exhausted sound, then a calm one again.
+- Significantly cleans up playback system, add types for modes, add reusable logic for cycles.
+
+Notes for *mod developers*: This mod hooks into the Voiced Actor Framework (if present) to automatically detect actor voice lines and suspends breathing cycle until other vocalizations are finished. The mod also detects item usage and suspends to allow item sounds (e.g. eating, drinking, meds) to play that usually already include actor sounds.
+
+To make your mod compatible with Natural Breathing, you can call the following functions from your mod.
+
+#### Stop and Suspend
+
+- Instantly stops any breathing or sweetener sounds.
+- Waits at least until `cooldown` has expired to resume breathing cycle.
+- Can be used for another actor voice, like a scream.
+
+```lua
+z_saint_actor_breathing and z_saint_actor_breathing.stop_and_suspend_breathing(cooldown)
+```
+
+#### Suspend Next
+
+- Does not stop an ongoing breath or sweetener sound.
+- Suspends breathing and prevents another sound until `cooldown` has expired.
+- Can be used for item use sounds, like eating, drinking, or smoking.
+
+```lua
+z_saint_actor_breathing and z_saint_actor_breathing.suspend_next_breathing(cooldown)
+```
 
 ## License
 
