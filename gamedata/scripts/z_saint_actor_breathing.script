@@ -136,9 +136,10 @@ function init_options()
 	opt.speaking_cooldown = 1000
 	opt.speaking_default_sound_volume = 1.5
 	opt.body_noises_default_sound_volume = 0.6
+
 	opt.item_use_cooldown = 6000
 	opt.hit_distress_cooldown = 10000
-	opt.residuality_time = 6000
+	opt.residuality_time = 8000
 	opt.fear_factor_npc_detection_radius = 50
 
 	opt.breathing_sound_volume = 0.4
