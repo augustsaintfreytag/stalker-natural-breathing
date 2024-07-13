@@ -208,11 +208,11 @@ function handle_breathing_cycle(actor)
 				local sound_index = tick_sound_index(sound_kind)
 				play_sound_with_parameters(actor, sound_kind, sound_record.mode, sound_index, sound_record.pause_factor)
 
-				printf("Playing residual sound of kind '" ..
+				log("Playing residual sound of kind '" ..
 					sound_kind .. "' with mode " .. sound_record.mode .. " and index " ..
 					sound_index .. " (expiration in " .. sound_record.time - current_time .. "ms).")
 			else
-				printf("Clearing residual sound of kind '" ..
+				log("Clearing residual sound of kind '" ..
 					sound_kind ..
 					"' with mode " ..
 					sound_record.mode .. " (expired since " .. current_time - sound_record.time .. "ms).")
@@ -259,7 +259,7 @@ function handle_breathing_cycle(actor)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
 				SOUND_PAUSE_FACTOR.STAMINA_RELATED)
 
-			printf("Playing stamina-related sweetener sound with mode average " .. sound_mode_avg .. " and index " ..
+			log("Playing stamina-related sweetener sound with mode average " .. sound_mode_avg .. " and index " ..
 				sound_index .. ".")
 			return
 		end
@@ -269,7 +269,7 @@ function handle_breathing_cycle(actor)
 
 		play_sound_with_parameters(actor, SOUND_KIND.STAMINA_RELATED, sound_mode, sound_index,
 			SOUND_PAUSE_FACTOR.STAMINA_RELATED, true)
-		printf("Playing stamina-related breathing sound with mode " ..
+		log("Playing stamina-related breathing sound with mode " ..
 			tostring(sound_mode) ..
 			" and index " ..
 			tostring(sound_index) ..
@@ -285,7 +285,7 @@ function handle_breathing_cycle(actor)
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
-		printf("Playing fear-related hallucinations extra sound with factor " ..
+		log("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 	end
 
@@ -294,7 +294,7 @@ function handle_breathing_cycle(actor)
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
 			.EXTREME_DISTRESS)
-		printf("Playing high fear factor sweetener sound with factor " ..
+		log("Playing high fear factor sweetener sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -305,7 +305,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
 			true)
-		printf("Playing high fear factor regular breathing sound with factor " ..
+		log("Playing high fear factor regular breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -316,7 +316,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.MODERATE_DISTRESS,
 			true)
-		printf("Playing low fear factor regular breathing sound with factor " ..
+		log("Playing low fear factor regular breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -329,7 +329,7 @@ function handle_breathing_cycle(actor)
 		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
 			.REGULAR, true)
-		printf("Playing rain-related sweetener sound with weather " ..
+		log("Playing rain-related sweetener sound with weather " ..
 			weather_kind .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -340,7 +340,7 @@ function handle_breathing_cycle(actor)
 	play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.REGULAR, sound_index,
 		SOUND_PAUSE_FACTOR.REGULAR, false)
 
-	printf("Playing regular breathing sound with index " .. tostring(sound_index) .. ".")
+	log("Playing regular breathing sound with index " .. tostring(sound_index) .. ".")
 end
 
 -- Sound Playback
@@ -480,7 +480,7 @@ function calculate_fear_factor()
 
 	local fear_factor = clamp(fear_value / 10, 0, 1)
 
-	printf("Calculated aggregate player fear factor: " ..
+	log("Calculated aggregate player fear factor: " ..
 		tostring(fear_factor) ..
 		" (from value " ..
 		fear_value ..
@@ -619,7 +619,7 @@ function hook_functions()
 				return
 			end
 
-			printf("Muting and suspending breathing, voiced actor sound playback '" ..
+			log("Muting and suspending breathing, voiced actor sound playback '" ..
 				file .. "' for total cooldown " .. cooldown + opt.speaking_cooldown .. "ms.")
 			stop_and_suspend_breathing(cooldown + opt.speaking_cooldown)
 
@@ -631,7 +631,7 @@ function hook_functions()
 	if actor_effects then
 		local original_play_item_fx = actor_effects.play_item_fx
 		actor_effects.play_item_fx = function(item)
-			printf("Player used item (via play item fx), setting action cooldown time to " ..
+			log("Player used item (via play item fx), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
 			suspend_next_breathing(opt.item_use_cooldown)
 			original_play_item_fx(item)
@@ -641,12 +641,17 @@ function hook_functions()
 	if enhanced_animations then
 		local original_start_anim = enhanced_animations.start_anim
 		enhanced_animations.start_anim = function(anim_section_hud)
-			printf("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
+			log("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
 			suspend_next_breathing(opt.item_use_cooldown)
 			original_start_anim(anim_section_hud)
 		end
 	end
+end
+
+function log(message)
+	-- Debugging disabled
+	-- printf(message)
 end
 
 function on_game_start()
