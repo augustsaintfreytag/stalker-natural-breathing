@@ -134,6 +134,8 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 1000
+	opt.speaking_default_sound_volume = 1.5
+	opt.body_noises_default_sound_volume = 0.6
 	opt.item_use_cooldown = 6000
 	opt.hit_distress_cooldown = 10000
 	opt.residuality_time = 6000
@@ -592,7 +594,12 @@ function hook_functions()
 			end
 
 			-- Alter regular hurt sounds, block above higher health threshold.
-			if string.find(file, "hurt_bad") or string.find(file, "hunger") or string.find(file, "thirst") or string.find(file, "tired") then
+			if string.find(file, "hunger") or string.find(file, "thirst") then
+				chance = chance / 4
+				sound_volume = opt.body_noises_default_sound_volume
+			elseif string.find(file, "tired") then
+				chance = chance / 4
+			elseif string.find(file, "sanity") then
 				chance = chance / 4
 			elseif string.find(file, "hurt") then
 				if db.actor:health() > 0.5 then
@@ -600,6 +607,7 @@ function hook_functions()
 				end
 
 				chance = chance / 4
+				sound_volume = opt.speaking_default_sound_volume
 			end
 
 			-- Fix playback volume for player hurt sounds, remove dependency on player health.
@@ -607,8 +615,9 @@ function hook_functions()
 				sound_volume = 1.0
 			end
 
-			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush.
+			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush, fix playback volume.
 			if string.find(file, "pain") then
+				sound_volume = opt.speaking_default_sound_volume
 				last_actor_hit_time = time_global()
 			end
 
