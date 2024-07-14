@@ -284,7 +284,7 @@ function handle_breathing_cycle(actor)
 
 	local fear_factor = calculate_fear_factor()
 
-	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.9 then
+	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.95 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
@@ -292,7 +292,7 @@ function handle_breathing_cycle(actor)
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 	end
 
-	if fear_factor > 0.7 and math.random() > 0.75 then
+	if fear_factor > 0.7 and math.random() > 0.9 then
 		-- High distress, play fear sweetener.
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
@@ -327,7 +327,7 @@ function handle_breathing_cycle(actor)
 	-- Weather
 
 	local weather_kind = get_weather_kind()
-	if (not get_is_masked()) and (not get_is_in_safe_space()) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.9) then
+	if (not get_is_masked()) and (not get_is_in_safe_space()) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.95) then
 		-- If it's raining or storming, play rain-related sweeteners.
 		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
