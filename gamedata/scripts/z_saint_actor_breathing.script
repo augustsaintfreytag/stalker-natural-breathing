@@ -112,6 +112,8 @@ end
 -- Init
 
 function init_options()
+	opt.debug_mode = true
+
 	opt.speed = {}
 
 	local ini_eff = ini_file("plugins\\actor_effects.ltx")
@@ -660,8 +662,11 @@ function hook_functions()
 end
 
 function log(message)
-	-- Debugging disabled
-	-- printf(message)
+	if not opt.debug_mode then
+		return
+	end
+
+	printf(message)
 end
 
 function on_game_start()
