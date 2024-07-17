@@ -443,8 +443,8 @@ function sound_volume()
 	return (1 - last_cam_dist / opt.cam_dist) * opt.breathing_sound_volume + jitter
 end
 
-	return random_float(-opt.breathing_sound_pitch_jitter, opt.breathing_sound_pitch_jitter)
 function sound_frequency()
+	return 1 + random_float(-opt.breathing_sound_pitch_jitter, opt.breathing_sound_pitch_jitter)
 end
 
 -- Fear Factor
