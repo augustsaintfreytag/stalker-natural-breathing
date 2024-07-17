@@ -148,6 +148,8 @@ function init_options()
 	opt.breathing_sound_volume_jitter = 0.15
 	opt.breathing_sound_pitch_jitter = 0.1
 
+	opt.masked_breathing_sound_boost = 0.1
+
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
 
@@ -439,8 +441,13 @@ function sound_volume()
 	end
 
 	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter)
+	local volume = (1 - last_cam_dist / opt.cam_dist) * opt.breathing_sound_volume + jitter
 
-	return (1 - last_cam_dist / opt.cam_dist) * opt.breathing_sound_volume + jitter
+	if get_is_masked() then
+		volume = volume + opt.masked_breathing_sound_boost
+	end
+
+	return volume
 end
 
 function sound_frequency()
