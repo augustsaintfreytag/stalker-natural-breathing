@@ -145,7 +145,7 @@ function init_options()
 	opt.fear_factor_npc_detection_radius = 50
 
 	opt.breathing_sound_volume = 0.4
-	opt.breathing_sound_volume_jitter = 0.1
+	opt.breathing_sound_volume_jitter = 0.15
 	opt.breathing_sound_pitch_jitter = 0.1
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
