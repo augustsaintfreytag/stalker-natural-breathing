@@ -575,18 +575,6 @@ function get_number_of_nearby_threats()
 	return { npcs = number_of_hostile_npcs, monsters = number_of_monsters }
 end
 
--- Utility
-
-function table.has_value(tab, val)
-	for _, value in ipairs(tab) do
-		if value == val then
-			return true
-		end
-	end
-
-	return false
-end
-
 -- Hook
 
 function hook_functions()
@@ -671,15 +659,31 @@ function hook_functions()
 	end
 end
 
+function on_game_load()
+	hook_functions()
+end
+
+function on_game_start()
+	init_options()
+	RegisterScriptCallback("on_game_load", on_game_load)
+end
+
+-- Utility
+
+function table.has_value(tab, val)
+	for _, value in ipairs(tab) do
+		if value == val then
+			return true
+		end
+	end
+
+	return false
+end
+
 function log(message)
 	if not opt.debug_mode then
 		return
 	end
 
-	printf(message)
-end
-
-function on_game_start()
-	init_options()
-	hook_functions()
+	printf("SAB - " .. message)
 end
