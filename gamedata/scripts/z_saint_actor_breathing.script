@@ -585,11 +585,14 @@ function hook_functions()
 	if AGDD_voiced_actor then
 		local original_actor_speak = AGDD_voiced_actor.actor_speak
 
+		log("Patching voiced actor framework, hooking into actor speak function.")
+
 		function AGDD_voiced_actor.actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority,
 											   ignore_conditionals, is_state)
 			-- Check blacklist, skip playback for sounds already handled in breathing script.
 			for _, blacklisted_word in ipairs(voiced_actor_blacklist) do
 				if string.find(file, blacklisted_word) then
+					log("Filtering out blacklisted sound '" .. file .. "' from voiced actor playback.")
 					return
 				end
 			end
@@ -618,6 +621,7 @@ function hook_functions()
 
 			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush, fix playback volume.
 			if string.find(file, "pain") then
+				log("Player hit detected via pain sound, marking time for simulated adrenaline rush.")
 				sound_volume = opt.speaking_default_sound_volume
 				last_actor_hit_time = time_global()
 			end
