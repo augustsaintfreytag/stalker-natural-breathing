@@ -452,6 +452,7 @@ end
 -- Fear Factor
 
 function calculate_fear_factor()
+	local time = time_global()
 	local is_night = get_is_night()
 	local is_underground = get_is_underground()
 	local is_in_combat = get_is_in_combat()
@@ -461,10 +462,15 @@ function calculate_fear_factor()
 	local nearby_threats = get_number_of_nearby_threats()
 	local number_of_hostile_npcs = nearby_threats.npcs
 	local number_of_monsters = nearby_threats.monsters
+	local has_been_hit = time < last_actor_hit_time + opt.hit_distress_cooldown
 
 	local fear_value = 0
 
-	fear_value = fear_value + clamp((1 / psy_health - 1), 0, 5)
+	fear_value = fear_value + clamp((1 / psy_health - 1) * 3, 0, 5)
+
+	if has_been_hit then
+		fear_value = fear_value + 6
+	end
 
 	if is_in_combat then
 		fear_value = fear_value + 1
@@ -490,18 +496,18 @@ function calculate_fear_factor()
 
 	local fear_factor = clamp(fear_value / 10, 0, 1)
 
-	log("Calculated aggregate player fear factor: " ..
-		tostring(fear_factor) ..
-		" (from value " ..
-		fear_value ..
-		") with factors (in combat: " ..
-		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
-		tostring(is_underground) ..
-		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-		", psy health: " ..
-		tostring(psy_health) ..
-		", nearby hostiles: " ..
-		tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
+	-- log("Calculated aggregate player fear factor: " ..
+	-- 	tostring(fear_factor) ..
+	-- 	" (from value " ..
+	-- 	fear_value ..
+	-- 	") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
+	-- 	tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
+	-- 	tostring(is_underground) ..
+	-- 	", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
+	-- 	", psy health: " ..
+	-- 	tostring(psy_health) ..
+	-- 	", nearby hostiles: " ..
+	-- 	tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
 	return fear_factor
 end
