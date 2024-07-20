@@ -614,12 +614,7 @@ function hook_functions()
 				sound_volume = opt.speaking_default_sound_volume
 			end
 
-			-- Fix sounds using masked variant when player is not wearing a mask.
-			if string.find(file, "\\m_") and not get_is_masked() then
-				file = file:gsub("\\m_", "\\")
-			end
-
-			-- Detect player hit via pain sound call, increase fear factor to max to simulate adrenaline rush, fix playback volume.
+			-- Detect player hit via pain sound call, mark last hit time for simulated adrenaline rush, fix playback volume.
 			if string.find(file, "pain") then
 				log("Player hit detected via pain sound, marking time for simulated adrenaline rush.")
 				sound_volume = opt.speaking_default_sound_volume
@@ -631,6 +626,12 @@ function hook_functions()
 
 			if chance and chance < rolled_chance then
 				return
+			end
+
+			-- Fix sounds using masked variant when player is not wearing a mask.
+			if string.find(file, "\\m_") and not get_is_masked() then
+				log("Fixing masked sound variant for player not wearing a mask in sound file '" .. file .. "'.")
+				file = file:gsub("\\m_", "\\")
 			end
 
 			log("Muting and suspending breathing, voiced actor sound playback '" ..
