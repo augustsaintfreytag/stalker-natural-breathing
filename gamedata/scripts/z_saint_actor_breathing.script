@@ -605,6 +605,7 @@ function hook_functions()
 				chance = chance / 4
 			elseif string.find(file, "sanity") then
 				chance = chance / 4
+				sound_volume = opt.speaking_default_sound_volume
 			elseif string.find(file, "hurt") then
 				if db.actor:health() > 0.5 then
 					return
