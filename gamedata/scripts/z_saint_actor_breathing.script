@@ -51,7 +51,6 @@ local last_actor_speed = 0
 local last_actor_position = { x = 0, y = 0, z = 0 }
 local last_actor_speed_time = 0
 local last_actor_hit_time = 0
-local last_cam_dist = 0
 
 local sound_action_cooldown_time = 0
 
@@ -438,9 +437,6 @@ end
 
 -- Sound Metadata
 
-function sound_volume()
-	if last_cam_dist > opt.cam_dist then
-		return 0
 	end
 
 	local jitter = random_float(-opt.breathing_sound_volume_jitter, opt.breathing_sound_volume_jitter)
