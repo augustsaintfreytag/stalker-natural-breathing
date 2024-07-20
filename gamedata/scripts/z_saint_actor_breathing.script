@@ -191,15 +191,24 @@ end
 -- Actor Breathing
 
 function handle_breathing_cycle(actor)
-	local current_time = time_global()
-	local actor_health = actor.health
+	local time = time_global()
+	local health = actor.health
 	local stamina = actor.power
 
-	if (current_time < sound_cooldown_time) or (current_time < sound_action_cooldown_time) or (actor_health < 0) then
+	if (time < sound_cooldown_time) or (time < sound_action_cooldown_time) or (health <= 0) then
 		return
 	end
 
+	local fear_factor = calculate_fear_factor()
+
 	-- Residual Sound
+
+	-- If fear is high, health is low, or stamina is low, clear residual sound
+	if fear_factor > 0.7 or health < 0.25 or stamina < 0.25 then
+		log("Clearing all residual sounds, extreme circumstances (fear factor: " .. fear_factor .. ", health: " ..
+			health .. ", stamina: " .. stamina .. ").")
+		sound_residual_cooldown_by_kind = {}
+	end
 
 	for sound_kind, sound_record in pairs(sound_residual_cooldown_by_kind) do
 		do
@@ -207,18 +216,18 @@ function handle_breathing_cycle(actor)
 				goto continue
 			end
 
-			if current_time < sound_record.time then
+			if time < sound_record.time then
 				local sound_index = tick_sound_index(sound_kind)
 				play_sound_with_parameters(actor, sound_kind, sound_record.mode, sound_index, sound_record.pause_factor)
 
 				log("Playing residual sound of kind '" ..
 					sound_kind .. "' with mode " .. sound_record.mode .. " and index " ..
-					sound_index .. " (expiration in " .. sound_record.time - current_time .. "ms).")
+					sound_index .. " (expiration in " .. sound_record.time - time .. "ms).")
 			else
 				log("Clearing residual sound of kind '" ..
 					sound_kind ..
 					"' with mode " ..
-					sound_record.mode .. " (expired since " .. current_time - sound_record.time .. "ms).")
+					sound_record.mode .. " (expired since " .. time - sound_record.time .. "ms).")
 
 				-- Residual time window exceeded, clear record.
 				sound_residual_cooldown_by_kind[sound_kind] = nil
@@ -232,8 +241,8 @@ function handle_breathing_cycle(actor)
 
 	-- Health
 
-	if actor_health <= opt.health.level2 then
-		if actor_health <= opt.health.level1 and math.random() > 0.75 then
+	if health <= opt.health.level2 then
+		if health <= opt.health.level1 and math.random() > 0.75 then
 			-- Player is critically wounded, play sweetener.
 			local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index,
@@ -250,7 +259,7 @@ function handle_breathing_cycle(actor)
 
 	-- Stamina
 
-	if actor.power < 0.5 or last_actor_speed_time > 0.25 then
+	if fear_factor <= 0.7 and (stamina < 0.5 or last_actor_speed_time > 0.25) then
 		-- Player is running or low on stamina
 		local sound_mode_power = round(2.5 / (2.5 * stamina))
 		local sound_mode_speed = round(3 * last_actor_speed_time / 30)
@@ -282,8 +291,6 @@ function handle_breathing_cycle(actor)
 
 	-- Fear Factor
 
-	local fear_factor = calculate_fear_factor()
-
 	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.95 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
@@ -302,7 +309,7 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	if fear_factor > 0.7 or last_actor_hit_time + opt.hit_distress_cooldown > current_time then
+	if fear_factor > 0.7 then
 		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
 		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
