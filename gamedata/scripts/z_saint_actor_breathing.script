@@ -131,11 +131,11 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 1000
-	opt.speaking_default_sound_volume = 1.5
+	opt.speaking_default_sound_volume = 1.7
 	opt.body_noises_default_sound_volume = 0.6
 
 	opt.item_use_cooldown = 6000
-	opt.hit_distress_cooldown = 10000
+	opt.hit_distress_cooldown = 6000
 	opt.residuality_time = 8000
 	opt.fear_factor_npc_detection_radius = 50
 
