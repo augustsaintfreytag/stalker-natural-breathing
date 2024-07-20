@@ -513,7 +513,7 @@ function get_is_surge()
 end
 
 function get_is_night()
-	return level.get_time_hours() < 3 or level.get_time_hours() > 22
+	return level.get_time_hours() < 4 or level.get_time_hours() > 20
 end
 
 function get_is_underground()
