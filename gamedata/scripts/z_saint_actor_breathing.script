@@ -591,8 +591,8 @@ function hook_functions()
 	if AGDD_voiced_actor then
 		local original_actor_speak = AGDD_voiced_actor.actor_speak
 
-		AGDD_voiced_actor.actor_speak = function(file, sound_volume, cooldown, chance, requires_squad, has_priority,
-												 ignore_conditionals, is_state)
+		function AGDD_voiced_actor.actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority,
+											   ignore_conditionals, is_state)
 			-- Check blacklist, skip playback for sounds already handled in breathing script.
 			for _, blacklisted_word in ipairs(voiced_actor_blacklist) do
 				if string.find(file, blacklisted_word) then
@@ -646,7 +646,7 @@ function hook_functions()
 
 	if actor_effects then
 		local original_play_item_fx = actor_effects.play_item_fx
-		actor_effects.play_item_fx = function(item)
+		function actor_effects.play_item_fx(item)
 			log("Player used item (via play item fx), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
 			suspend_next_breathing(opt.item_use_cooldown)
@@ -656,7 +656,7 @@ function hook_functions()
 
 	if enhanced_animations then
 		local original_start_anim = enhanced_animations.start_anim
-		enhanced_animations.start_anim = function(anim_section_hud)
+		function enhanced_animations.start_anim(anim_section_hud)
 			log("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
 				opt.item_use_cooldown .. "ms.")
 			suspend_next_breathing(opt.item_use_cooldown)
