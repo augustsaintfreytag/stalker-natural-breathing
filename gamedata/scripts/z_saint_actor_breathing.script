@@ -1,8 +1,3 @@
--- References
-
-local is_respi_on = actor_effects.is_respi_on
-local is_mask_on = actor_effects.is_mask_on
-
 -- Types
 
 local SOUND_KIND = {
@@ -553,8 +548,7 @@ function get_weather_kind()
 end
 
 function get_is_masked()
-	local actor = db.actor
-	return is_mask_on(actor) or is_respi_on(actor)
+	return actor_effects.is_respi_on()
 end
 
 function get_number_of_nearby_threats()
