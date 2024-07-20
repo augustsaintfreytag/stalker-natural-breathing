@@ -625,7 +625,7 @@ function hook_functions()
 			-- Augment random chance for playback, replace voiced actor script logic.
 			local rolled_chance = math.random(1, 100)
 
-			if chance < rolled_chance then
+			if chance and chance < rolled_chance then
 				return
 			end
 
