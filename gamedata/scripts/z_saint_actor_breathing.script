@@ -622,7 +622,7 @@ function hook_functions()
 				sound_volume = opt.body_noises_default_sound_volume
 			elseif string.find(file, "tired") then
 				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume * 0.85
+				sound_volume = opt.speaking_sound_volume * 0.5
 			elseif string.find(file, "sanity") then
 				chance = chance / 4
 				sound_volume = opt.speaking_sound_volume
