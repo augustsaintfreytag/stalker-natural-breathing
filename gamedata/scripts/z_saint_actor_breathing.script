@@ -628,6 +628,9 @@ function hook_functions()
 				sound_volume = opt.speaking_sound_volume
 			elseif string.find(file, "hurt") then
 				if health > 0.5 then
+					original_actor_speak(file, sound_volume, cooldown, 0, requires_squad, has_priority,
+						ignore_conditionals,
+						is_state)
 					return
 				end
 
@@ -646,6 +649,9 @@ function hook_functions()
 			local rolled_chance = math.random(1, 100)
 
 			if chance and chance < rolled_chance then
+				original_actor_speak(file, sound_volume, cooldown, 0, requires_squad, has_priority,
+					ignore_conditionals,
+					is_state)
 				return
 			end
 
@@ -693,14 +699,10 @@ function hook_functions()
 	end
 end
 
-function on_game_load()
-	hook_functions()
-end
+-- Init
 
-function on_game_start()
-	init_options()
-	RegisterScriptCallback("on_game_load", on_game_load)
-end
+init_options()
+hook_functions()
 
 -- Utility
 
