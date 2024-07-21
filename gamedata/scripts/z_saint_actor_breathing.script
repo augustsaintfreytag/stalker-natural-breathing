@@ -51,6 +51,7 @@ local last_actor_speed = 0
 local last_actor_position = { x = 0, y = 0, z = 0 }
 local last_actor_speed_time = 0
 local last_actor_hit_time = 0
+local last_actor_fear = 0
 
 local sound_action_cooldown_time = 0
 
@@ -257,9 +258,42 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
+	-- Fear Sweeteners
+
+	if fear_factor > 0.3 and math.random() > 0.95 then
+		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
+		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
+		log("Playing fear-related hallucinations extra sound with factor " ..
+			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
+	end
+
+	if fear_factor > 0.7 and math.random() > 0.9 then
+		-- High distress, play fear sweetener.
+		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
+		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
+			.EXTREME_DISTRESS)
+		log("Playing high fear factor sweetener sound with factor " ..
+			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
+		return
+	end
+
+	-- High Fear
+
+	if fear_factor > 0.7 then
+		-- If fear is high, switch to extreme distress for panicked breathing.
+		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
+		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
+			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
+			true)
+		log("Playing high fear factor regular breathing sound with factor " ..
+			fear_factor .. " and index " .. tostring(sound_index) .. ".")
+		return
+	end
+
 	-- Stamina
 
-	if fear_factor <= 0.7 and (stamina < 0.5 or last_actor_speed_time > 0.25) then
+	if stamina < 0.5 or last_actor_speed_time > 0.25 then
 		-- Player is running or low on stamina
 		local sound_mode_power = round(2.5 / (2.5 * stamina))
 		local sound_mode_speed = round(3 * last_actor_speed_time / 30)
@@ -289,36 +323,7 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Fear Factor
-
-	if fear_factor > 0.3 and get_psy_health() < 0.7 and math.random() > 0.95 then
-		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
-		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
-		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
-		log("Playing fear-related hallucinations extra sound with factor " ..
-			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
-	end
-
-	if fear_factor > 0.7 and math.random() > 0.9 then
-		-- High distress, play fear sweetener.
-		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
-		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
-			.EXTREME_DISTRESS)
-		log("Playing high fear factor sweetener sound with factor " ..
-			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
-		return
-	end
-
-	if fear_factor > 0.7 then
-		-- If fear is high or player was recently hit, switch to extreme distress for panicked breathing.
-		local sound_index = tick_sound_index(SOUND_KIND.REGULAR)
-		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
-			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
-			true)
-		log("Playing high fear factor regular breathing sound with factor " ..
-			fear_factor .. " and index " .. tostring(sound_index) .. ".")
-		return
-	end
+	-- Low Fear
 
 	if fear_factor > 0.3 then
 		-- If fear is moderate, switch to moderate distress for elevated breathing.
@@ -483,7 +488,9 @@ function calculate_fear_factor()
 	fear_value = fear_value + clamp((1 / psy_health - 1) * 3, 0, 5)
 
 	if has_been_hit then
-		fear_value = fear_value + 6
+		-- Add fear value based on time since last hit.
+		local hit_decay = 1 - clamp(time - last_actor_hit_time / opt.hit_distress_cooldown, 0, 1)
+		fear_value = fear_value + 6 * hit_decay
 	end
 
 	if is_in_combat then
@@ -522,6 +529,9 @@ function calculate_fear_factor()
 	-- 	tostring(psy_health) ..
 	-- 	", nearby hostiles: " ..
 	-- 	tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
+
+	fear_factor = (last_actor_fear + fear_factor) / 2
+	last_actor_fear = fear_factor
 
 	return fear_factor
 end
