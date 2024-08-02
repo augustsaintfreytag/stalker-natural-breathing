@@ -166,10 +166,12 @@ end
 
 function update_actor_speed_time()
 	if (last_actor_speed > opt.speed.mini) then
-		last_actor_speed_time = last_actor_speed_time + opt.speed.inc
-	elseif last_actor_speed_time > opt.speed.dec then
-		last_actor_speed_time = last_actor_speed_time - opt.speed.dec
+		last_actor_speed_time = clamp(last_actor_speed_time + opt.speed.inc, 0, 30)
+	else
+		last_actor_speed_time = clamp(last_actor_speed_time - opt.speed.dec, 0, 30)
 	end
+
+	-- log("Last actor speed time at: " .. last_actor_speed_time .. ".")
 end
 
 -- Actor Breathing Tick
