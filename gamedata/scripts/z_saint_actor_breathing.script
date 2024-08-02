@@ -486,7 +486,7 @@ function calculate_fear_factor()
 
 	local fear_value = 0
 
-	fear_value = fear_value + clamp((1 / psy_health - 1) * 3, 0, 5)
+	fear_value = fear_value + clamp((1 / psy_health - 1) * 6, 0, 7)
 
 	if has_been_hit then
 		-- Add fear value based on time since last hit.
