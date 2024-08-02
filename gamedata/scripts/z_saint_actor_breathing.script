@@ -128,7 +128,7 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 2000
-	opt.speaking_sound_volume = 1.7
+	opt.speaking_sound_volume = 1.4
 
 	opt.body_noises_default_sound_volume = 0.6
 
@@ -139,9 +139,9 @@ function init_options()
 
 	opt.breathing_sound_volume = 0.4
 	opt.breathing_sound_volume_jitter = 0.15
-	opt.breathing_sound_pitch_jitter = 0.15
+	opt.breathing_sound_pitch_jitter = 0.05
 
-	opt.masked_breathing_sound_coeff = 1.5
+	opt.masked_breathing_sound_coeff = 1.3
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -379,9 +379,7 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = sound_volume(kind)
-
-	-- No frequency jitter for sweeteners (prevent voice distortion).
-	-- sound_object_ref.frequency = sound_frequency()
+	sound_object_ref.frequency = sound_frequency(kind)
 
 	local sound_duration = sound_object_ref:length() or 1000
 	suspend_next_breathing(sound_duration * pause_factor)
@@ -447,7 +445,7 @@ end
 function sound_volume(kind)
 	local volume = opt.breathing_sound_volume
 
-	if kind == SOUND_KIND.FEAR_SWEETENER then
+	if kind == SOUND_KIND.FEAR_SWEETENER or kind == SOUND_KIND.WEATHER_RAIN_SWEETENER then
 		volume = opt.speaking_sound_volume
 	end
 
