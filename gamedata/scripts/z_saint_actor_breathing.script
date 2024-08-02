@@ -336,7 +336,7 @@ function handle_breathing_cycle(actor)
 	-- Weather
 
 	local weather_kind = get_weather_kind()
-	if (not get_is_masked()) and (not get_is_in_safe_space()) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.95) then
+	if (not get_is_masked()) and (not get_is_in_safe_space()) and get_is_raining() and (math.random() > 0.97) then
 		-- If it's raining or storming, play rain-related sweeteners.
 		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
@@ -576,6 +576,13 @@ function get_weather_kind()
 	local weather_kind = weather_manager:get_curr_weather()
 
 	return weather_kind
+end
+
+function get_is_raining()
+	local weather_kind = get_weather_kind()
+	local is_rainy_weather = weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM
+
+	return is_rainy_weather and level.rain_factor() > 0.05
 end
 
 function get_is_masked()
