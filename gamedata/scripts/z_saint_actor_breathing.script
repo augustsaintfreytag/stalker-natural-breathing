@@ -267,7 +267,7 @@ function handle_breathing_cycle(actor)
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 	end
 
-	if fear_factor > 0.7 and math.random() > 0.9 then
+	if fear_factor > 0.5 and math.random() > 0.9 then
 		-- High distress, play fear sweetener.
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
