@@ -44,7 +44,8 @@ local WEATHER_KIND = {
 
 -- State
 
-local opt = {}
+opt = {}
+
 local sound_cooldown_time = 0
 
 local last_actor_speed = 0
@@ -75,10 +76,6 @@ local num_sounds_by_kind = {
 
 -- Format for values: `{ mode = nil, pause_factor = 0, time = 0 }`
 local sound_residual_cooldown_by_kind = {}
-
--- Configuration
-
-local voiced_actor_blacklist = { "fear", "exhausted" }
 
 -- Ticking
 
@@ -413,6 +410,10 @@ function suspend_next_breathing(cooldown)
 	sound_action_cooldown_time = current_time + cooldown
 end
 
+function on_actor_hit()
+	last_actor_hit_time = time_global()
+end
+
 -- Sound Residuality
 
 function register_residual_sound(kind, mode, pause_factor)
@@ -605,84 +606,6 @@ function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
 	actor_effects.play_sound_breath_mask = play_sound_breath_mask
 	actor_effects.play_sound_breath = play_sound_breath
-
-	-- Voiced Actor Framework Integration
-
-	if agdd_voiced_actor then
-		local original_actor_speak = agdd_voiced_actor.actor_speak
-
-		log("Patching voiced actor framework, hooking into actor speak function.")
-
-		function patched_actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority,
-									 ignore_conditionals, is_state)
-			-- Check blacklist, skip playback for sounds already handled in breathing script.
-			for _, blacklisted_word in ipairs(voiced_actor_blacklist) do
-				if string.find(file, blacklisted_word) then
-					log("Filtering out blacklisted sound '" .. file .. "' from voiced actor playback.")
-					return
-				end
-			end
-
-			local actor = db.actor
-			local health = actor.health
-
-			-- Alter regular hurt sounds, block above higher health threshold.
-			if string.find(file, "hunger") or string.find(file, "thirst") then
-				chance = chance / 4
-				sound_volume = opt.body_noises_default_sound_volume
-			elseif string.find(file, "tired") then
-				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume * 0.5
-			elseif string.find(file, "sanity") then
-				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume
-			elseif string.find(file, "hurt") then
-				if health > 0.5 then
-					original_actor_speak(file, sound_volume, cooldown, 0, requires_squad, has_priority,
-						ignore_conditionals,
-						is_state)
-					return
-				end
-
-				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume
-			end
-
-			-- Detect player hit via pain sound call, mark last hit time for simulated adrenaline rush, fix playback volume.
-			if string.find(file, "pain") then
-				log("Player hit detected via pain sound, marking time for simulated adrenaline rush.")
-				sound_volume = opt.speaking_sound_volume
-				last_actor_hit_time = time_global()
-			end
-
-			-- Augment random chance for playback, replace voiced actor script logic.
-			local rolled_chance = math.random(1, 100)
-
-			if chance and chance < rolled_chance then
-				original_actor_speak(file, sound_volume, cooldown, 0, requires_squad, has_priority,
-					ignore_conditionals,
-					is_state)
-				return
-			end
-
-			-- Fix sounds using masked variant when player is not wearing a mask.
-			if string.find(file, "\\m_") and not get_is_masked() then
-				log("Fixing masked sound variant for player not wearing a mask in sound file '" .. file .. "'.")
-				file = file:gsub("\\m_", "\\")
-			end
-
-			log("Muting and suspending breathing, voiced actor sound playback '" ..
-				file .. "', setting cooldown " .. opt.speaking_cooldown .. "ms.")
-			stop_and_suspend_breathing(opt.speaking_cooldown)
-
-			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
-				is_state)
-		end
-
-		agdd_voiced_actor.actor_speak = patched_actor_speak
-	else
-		log("Voiced actor framework not found, skipping voiced actor hooks.")
-	end
 
 	-- Item Use Integration via Actor Effects
 
