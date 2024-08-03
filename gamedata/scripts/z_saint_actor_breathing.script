@@ -490,8 +490,8 @@ function calculate_fear_factor()
 
 	if has_been_hit then
 		-- Add fear value based on time since last hit.
-		local hit_decay = 1 - clamp(time - last_actor_hit_time / opt.hit_distress_cooldown, 0, 1)
-		fear_value = fear_value + 6 * hit_decay
+		local hit_decay = 1 - clamp((time - last_actor_hit_time) / opt.hit_distress_cooldown, 0, 1)
+		fear_value = fear_value + 10 * hit_decay
 	end
 
 	if is_in_combat then
