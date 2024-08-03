@@ -44,7 +44,8 @@ local WEATHER_KIND = {
 
 -- State
 
-local opt = {}
+opt = {}
+
 local sound_cooldown_time = 0
 
 local last_actor_speed = 0
@@ -75,10 +76,6 @@ local num_sounds_by_kind = {
 
 -- Format for values: `{ mode = nil, pause_factor = 0, time = 0 }`
 local sound_residual_cooldown_by_kind = {}
-
--- Configuration
-
-local voiced_actor_blacklist = { "fear", "exhausted" }
 
 -- Ticking
 
@@ -131,7 +128,7 @@ function init_options()
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
 	opt.speaking_cooldown = 2000
-	opt.speaking_sound_volume = 1.7
+	opt.speaking_sound_volume = 1.4
 
 	opt.body_noises_default_sound_volume = 0.6
 
@@ -142,9 +139,9 @@ function init_options()
 
 	opt.breathing_sound_volume = 0.4
 	opt.breathing_sound_volume_jitter = 0.15
-	opt.breathing_sound_pitch_jitter = 0.15
+	opt.breathing_sound_pitch_jitter = 0.05
 
-	opt.masked_breathing_sound_coeff = 1.5
+	opt.masked_breathing_sound_coeff = 1.3
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -169,10 +166,12 @@ end
 
 function update_actor_speed_time()
 	if (last_actor_speed > opt.speed.mini) then
-		last_actor_speed_time = last_actor_speed_time + opt.speed.inc
-	elseif last_actor_speed_time > opt.speed.dec then
-		last_actor_speed_time = last_actor_speed_time - opt.speed.dec
+		last_actor_speed_time = clamp(last_actor_speed_time + opt.speed.inc, 0, 30)
+	else
+		last_actor_speed_time = clamp(last_actor_speed_time - opt.speed.dec, 0, 30)
 	end
+
+	-- log("Last actor speed time at: " .. last_actor_speed_time .. ".")
 end
 
 -- Actor Breathing Tick
@@ -205,7 +204,7 @@ function handle_breathing_cycle(actor)
 	-- Residual Sound
 
 	-- If fear is high, health is low, or stamina is low, clear residual sound
-	if fear_factor > 0.7 or health < 0.25 or stamina < 0.25 then
+	if fear_factor > 0.9 or health < 0.2 or stamina < 0.2 then
 		log("Clearing all residual sounds, extreme circumstances (fear factor: " .. fear_factor .. ", health: " ..
 			health .. ", stamina: " .. stamina .. ").")
 		sound_residual_cooldown_by_kind = {}
@@ -268,7 +267,7 @@ function handle_breathing_cycle(actor)
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 	end
 
-	if fear_factor > 0.7 and math.random() > 0.9 then
+	if fear_factor > 0.5 and math.random() > 0.9 then
 		-- High distress, play fear sweetener.
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
@@ -286,18 +285,18 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
 			true)
-		log("Playing high fear factor regular breathing sound with factor " ..
+		log("Playing high fear factor breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
 
 	-- Stamina
 
-	if stamina < 0.5 or last_actor_speed_time > 0.25 then
+	if stamina < 0.5 or last_actor_speed_time > 1.0 then
 		-- Player is running or low on stamina
 		local sound_mode_power = round(2.5 / (2.5 * stamina))
-		local sound_mode_speed = round(3 * last_actor_speed_time / 30)
-		local sound_mode_avg = round((sound_mode_power + sound_mode_speed) / 2)
+		local sound_mode_speed = round(3 * last_actor_speed_time / 20)
+		local sound_mode_avg = (sound_mode_power + sound_mode_speed) / 2
 
 		if sound_mode_avg > 1 and math.random() > 0.8 then
 			-- Play sweetener sound
@@ -305,12 +304,12 @@ function handle_breathing_cycle(actor)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.STAMINA_RELATED_SWEETENER, sound_index,
 				SOUND_PAUSE_FACTOR.STAMINA_RELATED)
 
-			log("Playing stamina-related sweetener sound with mode average " .. sound_mode_avg .. " and index " ..
+			log("Playing stamina-related sweetener sound from mode average " .. sound_mode_avg .. " and index " ..
 				sound_index .. ".")
 			return
 		end
 
-		local sound_mode = clamp(sound_mode_avg, 1, 2)
+		local sound_mode = clamp(round(sound_mode_avg), 1, 2)
 		local sound_index = tick_sound_index(SOUND_KIND.STAMINA_RELATED)
 
 		play_sound_with_parameters(actor, SOUND_KIND.STAMINA_RELATED, sound_mode, sound_index,
@@ -331,7 +330,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.MODERATE_DISTRESS,
 			true)
-		log("Playing low fear factor regular breathing sound with factor " ..
+		log("Playing low fear factor breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -339,7 +338,7 @@ function handle_breathing_cycle(actor)
 	-- Weather
 
 	local weather_kind = get_weather_kind()
-	if (not get_is_masked()) and (not get_is_in_safe_space()) and (weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM) and (math.random() > 0.95) then
+	if (not get_is_masked()) and (not get_is_in_safe_space()) and get_is_raining() and (math.random() > 0.97) then
 		-- If it's raining or storming, play rain-related sweeteners.
 		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
@@ -382,9 +381,7 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 	sound_object_ref = sound_object(sound_path)
 	sound_object_ref:play(actor, 0, sound_object.s2d)
 	sound_object_ref.volume = sound_volume(kind)
-
-	-- No frequency jitter for sweeteners (prevent voice distortion).
-	-- sound_object_ref.frequency = sound_frequency()
+	sound_object_ref.frequency = sound_frequency(kind)
 
 	local sound_duration = sound_object_ref:length() or 1000
 	suspend_next_breathing(sound_duration * pause_factor)
@@ -411,6 +408,10 @@ end
 function suspend_next_breathing(cooldown)
 	local current_time = time_global()
 	sound_action_cooldown_time = current_time + cooldown
+end
+
+function on_actor_hit()
+	last_actor_hit_time = time_global()
 end
 
 -- Sound Residuality
@@ -446,7 +447,7 @@ end
 function sound_volume(kind)
 	local volume = opt.breathing_sound_volume
 
-	if kind == SOUND_KIND.FEAR_SWEETENER then
+	if kind == SOUND_KIND.FEAR_SWEETENER or kind == SOUND_KIND.WEATHER_RAIN_SWEETENER then
 		volume = opt.speaking_sound_volume
 	end
 
@@ -485,12 +486,12 @@ function calculate_fear_factor()
 
 	local fear_value = 0
 
-	fear_value = fear_value + clamp((1 / psy_health - 1) * 3, 0, 5)
+	fear_value = fear_value + clamp((1 / psy_health - 1) * 6, 0, 7)
 
 	if has_been_hit then
 		-- Add fear value based on time since last hit.
-		local hit_decay = 1 - clamp(time - last_actor_hit_time / opt.hit_distress_cooldown, 0, 1)
-		fear_value = fear_value + 6 * hit_decay
+		local hit_decay = 1 - clamp((time - last_actor_hit_time) / opt.hit_distress_cooldown, 0, 1)
+		fear_value = fear_value + 10 * hit_decay
 	end
 
 	if is_in_combat then
@@ -517,20 +518,20 @@ function calculate_fear_factor()
 
 	local fear_factor = clamp(fear_value / 10, 0, 1)
 
-	-- log("Calculated aggregate player fear factor: " ..
-	-- 	tostring(fear_factor) ..
-	-- 	" (from value " ..
-	-- 	fear_value ..
-	-- 	") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
-	-- 	tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
-	-- 	tostring(is_underground) ..
-	-- 	", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-	-- 	", psy health: " ..
-	-- 	tostring(psy_health) ..
-	-- 	", nearby hostiles: " ..
-	-- 	tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
+	log("Calculated aggregate player fear factor: " ..
+		tostring(fear_factor) ..
+		" (from value " ..
+		fear_value ..
+		") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
+		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
+		tostring(is_underground) ..
+		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
+		", psy health: " ..
+		tostring(psy_health) ..
+		", nearby hostiles: " ..
+		tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
-	fear_factor = (last_actor_fear + fear_factor) / 2
+	fear_factor = math.max(fear_factor, (last_actor_fear * 0.7 + fear_factor * 0.3))
 	last_actor_fear = fear_factor
 
 	return fear_factor
@@ -577,6 +578,13 @@ function get_weather_kind()
 	return weather_kind
 end
 
+function get_is_raining()
+	local weather_kind = get_weather_kind()
+	local is_rainy_weather = weather_kind == WEATHER_KIND.RAINING or weather_kind == WEATHER_KIND.STORM
+
+	return is_rainy_weather and level.rain_factor() > 0.05
+end
+
 function get_is_masked()
 	return actor_effects.is_respi_on()
 end
@@ -599,90 +607,12 @@ function get_number_of_nearby_threats()
 	return { npcs = number_of_hostile_npcs, monsters = number_of_monsters }
 end
 
--- Hook
+-- Hooks
 
 function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
 	actor_effects.play_sound_breath_mask = play_sound_breath_mask
 	actor_effects.play_sound_breath = play_sound_breath
-
-	-- Voiced Actor Framework Integration
-
-	if agdd_voiced_actor then
-		local original_actor_speak = agdd_voiced_actor.actor_speak
-
-		log("Patching voiced actor framework, hooking into actor speak function.")
-
-		function patched_actor_speak(file, sound_volume, cooldown, chance, requires_squad, has_priority,
-									 ignore_conditionals, is_state)
-			-- Check blacklist, skip playback for sounds already handled in breathing script.
-			for _, blacklisted_word in ipairs(voiced_actor_blacklist) do
-				if string.find(file, blacklisted_word) then
-					log("Filtering out blacklisted sound '" .. file .. "' from voiced actor playback.")
-					return
-				end
-			end
-
-			local actor = db.actor
-			local health = actor.health
-
-			-- Alter regular hurt sounds, block above higher health threshold.
-			if string.find(file, "hunger") or string.find(file, "thirst") then
-				chance = chance / 4
-				sound_volume = opt.body_noises_default_sound_volume
-			elseif string.find(file, "tired") then
-				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume * 0.5
-			elseif string.find(file, "sanity") then
-				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume
-			elseif string.find(file, "hurt") then
-				if health > 0.5 then
-					original_actor_speak(file, sound_volume, cooldown, 0, requires_squad, has_priority,
-						ignore_conditionals,
-						is_state)
-					return
-				end
-
-				chance = chance / 4
-				sound_volume = opt.speaking_sound_volume
-			end
-
-			-- Detect player hit via pain sound call, mark last hit time for simulated adrenaline rush, fix playback volume.
-			if string.find(file, "pain") then
-				log("Player hit detected via pain sound, marking time for simulated adrenaline rush.")
-				sound_volume = opt.speaking_sound_volume
-				last_actor_hit_time = time_global()
-			end
-
-			-- Augment random chance for playback, replace voiced actor script logic.
-			local rolled_chance = math.random(1, 100)
-
-			if chance and chance < rolled_chance then
-				original_actor_speak(file, sound_volume, cooldown, 0, requires_squad, has_priority,
-					ignore_conditionals,
-					is_state)
-				return
-			end
-
-			-- Fix sounds using masked variant when player is not wearing a mask.
-			if string.find(file, "\\m_") and not get_is_masked() then
-				log("Fixing masked sound variant for player not wearing a mask in sound file '" .. file .. "'.")
-				file = file:gsub("\\m_", "\\")
-			end
-
-			log("Muting and suspending breathing, voiced actor sound playback '" ..
-				file .. "', setting cooldown " .. opt.speaking_cooldown .. "ms.")
-			stop_and_suspend_breathing(opt.speaking_cooldown)
-
-			original_actor_speak(file, sound_volume, cooldown, 100, requires_squad, has_priority, ignore_conditionals,
-				is_state)
-		end
-
-		agdd_voiced_actor.actor_speak = patched_actor_speak
-	else
-		log("Voiced actor framework not found, skipping voiced actor hooks.")
-	end
 
 	-- Item Use Integration via Actor Effects
 
@@ -707,6 +637,24 @@ function hook_functions()
 			original_start_anim(anim_section_hud)
 		end
 	end
+end
+
+function actor_on_before_hit(target_hit, target_bone_id, target_flags)
+	if
+		target_hit.type == hit.fire_wound or
+		target_hit.type == hit.wound or
+		target_hit.type == hit.wound_2 or
+		target_hit.type == hit.strike or
+		target_hit.type == hit.explosion or
+		target_hit.type == hit.telepatic
+	then
+		log("Registered actor hit of type '" .. target_hit.type .. "', updating actor hit cooldown.")
+		on_actor_hit()
+	end
+end
+
+function on_game_start()
+	RegisterScriptCallback("actor_on_before_hit", actor_on_before_hit)
 end
 
 -- Init
