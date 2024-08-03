@@ -285,7 +285,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.EXTREME_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.EXTREME_DISTRESS,
 			true)
-		log("Playing high fear factor regular breathing sound with factor " ..
+		log("Playing high fear factor breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
@@ -330,7 +330,7 @@ function handle_breathing_cycle(actor)
 		play_sound_with_parameters(actor, SOUND_KIND.REGULAR, SOUND_REGULAR_BREATH_MODE.MODERATE_DISTRESS, sound_index,
 			SOUND_PAUSE_FACTOR.MODERATE_DISTRESS,
 			true)
-		log("Playing low fear factor regular breathing sound with factor " ..
+		log("Playing low fear factor breathing sound with factor " ..
 			fear_factor .. " and index " .. tostring(sound_index) .. ".")
 		return
 	end
