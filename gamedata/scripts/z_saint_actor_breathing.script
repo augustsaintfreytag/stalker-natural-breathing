@@ -531,7 +531,7 @@ function calculate_fear_factor()
 	-- 	", nearby hostiles: " ..
 	-- 	tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
-	fear_factor = (last_actor_fear + fear_factor) / 2
+	fear_factor = math.max(fear_factor, (last_actor_fear * 0.7 + fear_factor * 0.3))
 	last_actor_fear = fear_factor
 
 	return fear_factor
