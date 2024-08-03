@@ -92,10 +92,7 @@ function hook_functions()
 
 		-- Detect player hit via pain sound call, mark last hit time for simulated adrenaline rush, fix playback volume.
 		if string.find(file, "pain") then
-			log(
-				"Player hit detected via pain sound, notifying breathing script, marking time for simulated adrenaline rush.")
 			sound_volume = opt.speaking_sound_volume
-			z_saint_actor_breathing.on_actor_hit()
 		end
 
 		if
@@ -152,7 +149,7 @@ function log(message)
 		return
 	end
 
-	printf(" - " .. message)
+	printf("SAB/VAI - " .. message)
 end
 
 -- Init

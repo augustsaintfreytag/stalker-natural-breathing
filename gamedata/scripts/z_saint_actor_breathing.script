@@ -607,7 +607,7 @@ function get_number_of_nearby_threats()
 	return { npcs = number_of_hostile_npcs, monsters = number_of_monsters }
 end
 
--- Hook
+-- Hooks
 
 function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
@@ -637,6 +637,24 @@ function hook_functions()
 			original_start_anim(anim_section_hud)
 		end
 	end
+end
+
+function actor_on_before_hit(target_hit, target_bone_id, target_flags)
+	if
+		target_hit.type == hit.fire_wound or
+		target_hit.type == hit.wound or
+		target_hit.type == hit.wound_2 or
+		target_hit.type == hit.strike or
+		target_hit.type == hit.explosion or
+		target_hit.type == hit.telepatic
+	then
+		log("Registered actor hit of type '" .. target_hit.type .. "', updating actor hit cooldown.")
+		on_actor_hit()
+	end
+end
+
+function on_game_start()
+	RegisterScriptCallback("actor_on_before_hit", actor_on_before_hit)
 end
 
 -- Init
