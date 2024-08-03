@@ -204,7 +204,7 @@ function handle_breathing_cycle(actor)
 	-- Residual Sound
 
 	-- If fear is high, health is low, or stamina is low, clear residual sound
-	if fear_factor > 0.7 or health < 0.25 or stamina < 0.25 then
+	if fear_factor > 0.9 or health < 0.2 or stamina < 0.2 then
 		log("Clearing all residual sounds, extreme circumstances (fear factor: " .. fear_factor .. ", health: " ..
 			health .. ", stamina: " .. stamina .. ").")
 		sound_residual_cooldown_by_kind = {}
