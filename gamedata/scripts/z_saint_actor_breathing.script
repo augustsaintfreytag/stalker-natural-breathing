@@ -518,18 +518,18 @@ function calculate_fear_factor()
 
 	local fear_factor = clamp(fear_value / 10, 0, 1)
 
-	-- log("Calculated aggregate player fear factor: " ..
-	-- 	tostring(fear_factor) ..
-	-- 	" (from value " ..
-	-- 	fear_value ..
-	-- 	") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
-	-- 	tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
-	-- 	tostring(is_underground) ..
-	-- 	", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-	-- 	", psy health: " ..
-	-- 	tostring(psy_health) ..
-	-- 	", nearby hostiles: " ..
-	-- 	tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
+	log("Calculated aggregate player fear factor: " ..
+		tostring(fear_factor) ..
+		" (from value " ..
+		fear_value ..
+		") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
+		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
+		tostring(is_underground) ..
+		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
+		", psy health: " ..
+		tostring(psy_health) ..
+		", nearby hostiles: " ..
+		tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
 	fear_factor = math.max(fear_factor, (last_actor_fear * 0.7 + fear_factor * 0.3))
 	last_actor_fear = fear_factor
