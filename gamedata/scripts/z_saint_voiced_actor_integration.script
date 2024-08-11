@@ -36,7 +36,7 @@ function hook_functions()
 		return
 	end
 
-	if not agdd_voiced_actor then
+	if not AGDD_voiced_actor then
 		log("Voiced actor framework not found, skipping voiced actor hooks.")
 		return
 	end
@@ -45,8 +45,10 @@ function hook_functions()
 
 	local get_muffle_status = function() -- changes muffle condition of the sound
 		if z_saint_actor_breathing.get_is_masked() then
+			AGDD_voiced_actor.muffle = "m_"
 			agdd_voiced_actor.muffle = "m_"
 		else
+			AGDD_voiced_actor.muffle = ""
 			agdd_voiced_actor.muffle = ""
 		end
 	end
@@ -99,7 +101,7 @@ function hook_functions()
 			(is_state and time_global() < state_cooldown) or
 			(not is_state and not has_priority and time_global() < speaking_cooldown) or
 			(not ignore_conditionals and (actor:is_talking() or not actor:alive())) or
-			(requires_squad and not agdd_voiced_actor.is_actor_in_squad())
+			(requires_squad and not AGDD_voiced_actor.is_actor_in_squad())
 		then
 			log("Skipping voiced actor sound '" ..
 				file ..
