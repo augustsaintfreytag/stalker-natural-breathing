@@ -7,7 +7,8 @@ local SOUND_KIND = {
 	STAMINA_RELATED = "run",
 	STAMINA_RELATED_SWEETENER = "run_s",
 	WEATHER_RAIN_SWEETENER = "weather_rain",
-	HALLUCINATIONS = "hallucinations"
+	HALLUCINATIONS = "hallucinations",
+	TINNITUS = "tinnitus",
 }
 
 local SOUND_REGULAR_BREATH_MODE = {
@@ -42,6 +43,20 @@ local WEATHER_KIND = {
 	STORM = "storm"
 }
 
+local SOUND_SUSPENSION_REASON = {
+	REGULAR = "regular",
+	ACTION = "action",
+}
+
+local ITEM_USE_COOLDOWN_BY_KIND = {
+	["i_tobacco"] = 11000,
+	["i_drink"] = 11000,
+	["i_food"] = 8000,
+	["i_medical"] = 9000,
+	["i_bandage"] = 5000,
+	["o_helmet"] = 5000
+}
+
 -- State
 
 opt = {}
@@ -67,7 +82,8 @@ local num_sounds_by_kind = {
 	[SOUND_KIND.STAMINA_RELATED] = 6,
 	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7,
 	[SOUND_KIND.WEATHER_RAIN_SWEETENER] = 5,
-	[SOUND_KIND.HALLUCINATIONS] = 5
+	[SOUND_KIND.HALLUCINATIONS] = 5,
+	[SOUND_KIND.TINNITUS] = 1
 }
 
 -- Residuality means a mode is retained for some time after the condition is no longer met.
@@ -127,12 +143,14 @@ function init_options()
 
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
-	opt.speaking_cooldown = 2000
+	opt.speaking_cooldown = 3000
 	opt.speaking_sound_volume = 1.4
+
+	opt.extra_sound_volume = 0.5
 
 	opt.body_noises_default_sound_volume = 0.6
 
-	opt.item_use_cooldown = 6000
+	opt.item_use_cooldown = 2000
 	opt.hit_distress_cooldown = 6000
 	opt.residuality_time = 8000
 	opt.fear_factor_npc_detection_radius = 50
@@ -141,7 +159,7 @@ function init_options()
 	opt.breathing_sound_volume_jitter = 0.15
 	opt.breathing_sound_pitch_jitter = 0.05
 
-	opt.masked_breathing_sound_coeff = 1.3
+	opt.masked_breathing_sound_coeff = 1.25
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -188,14 +206,27 @@ function update_breathing(actor)
 	handle_breathing_cycle(actor)
 end
 
+function did_exceed_cooldowns()
+	return did_exceed_breathing_cooldown() and did_exceed_action_cooldown()
+end
+
+function did_exceed_breathing_cooldown()
+	return time_global() > sound_cooldown_time
+end
+
+function did_exceed_action_cooldown()
+	return time_global() > sound_action_cooldown_time
+end
+
 -- Actor Breathing
 
 function handle_breathing_cycle(actor)
 	local time = time_global()
 	local health = actor.health
+	local psy_health = get_psy_health()
 	local stamina = actor.power
 
-	if (time < sound_cooldown_time) or (time < sound_action_cooldown_time) or (health <= 0) then
+	if not did_exceed_cooldowns() or (health <= 0) then
 		return
 	end
 
@@ -259,13 +290,18 @@ function handle_breathing_cycle(actor)
 
 	-- Fear Sweeteners
 
-	if fear_factor > 0.3 and math.random() > 0.95 then
+	if fear_factor > 0.5 and psy_health < 0.2 and math.random() > 0.75 then
+		local sound_index = random_sound_index(SOUND_KIND.TINNITUS)
+		play_extra_sound_with_parameters(actor, SOUND_KIND.TINNITUS, sound_index)
+	elseif fear_factor > 0.5 and math.random() > 0.95 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
 		log("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
 	end
+
+	-- Moderate Fear
 
 	if fear_factor > 0.5 and math.random() > 0.9 then
 		-- High distress, play fear sweetener.
@@ -392,22 +428,27 @@ function play_extra_sound_with_parameters(actor, kind, index)
 
 	local extra_sound_object_ref = sound_object(sound_path)
 	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
-	extra_sound_object_ref.volume = 0.5
+	extra_sound_object_ref.volume = opt.extra_sound_volume
 end
 
 -- Sound Suspension
 
-function stop_and_suspend_breathing(cooldown)
-	suspend_next_breathing(cooldown)
+function stop_and_suspend_breathing(cooldown, reason)
+	suspend_next_breathing(cooldown, reason)
 
 	if sound_object_ref then
 		sound_object_ref:stop()
 	end
 end
 
-function suspend_next_breathing(cooldown)
+function suspend_next_breathing(cooldown, reason)
 	local current_time = time_global()
-	sound_action_cooldown_time = current_time + cooldown
+
+	if reason and reason == SOUND_SUSPENSION_REASON.ACTION then
+		sound_action_cooldown_time = current_time + cooldown
+	else
+		sound_cooldown_time = current_time + cooldown
+	end
 end
 
 function on_actor_hit()
@@ -518,18 +559,18 @@ function calculate_fear_factor()
 
 	local fear_factor = clamp(fear_value / 10, 0, 1)
 
-	log("Calculated aggregate player fear factor: " ..
-		tostring(fear_factor) ..
-		" (from value " ..
-		fear_value ..
-		") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
-		tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
-		tostring(is_underground) ..
-		", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
-		", psy health: " ..
-		tostring(psy_health) ..
-		", nearby hostiles: " ..
-		tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
+	-- log("Calculated aggregate player fear factor: " ..
+	-- 	tostring(fear_factor) ..
+	-- 	" (from value " ..
+	-- 	fear_value ..
+	-- 	") with factors (hit: " .. tostring(has_been_hit) .. ", in combat: " ..
+	-- 	tostring(is_in_combat) .. ", night: " .. tostring(is_night) .. ", underground: " ..
+	-- 	tostring(is_underground) ..
+	-- 	", surge: " .. tostring(is_surge) .. ", safe space: " .. tostring(is_in_safe_space) ..
+	-- 	", psy health: " ..
+	-- 	tostring(psy_health) ..
+	-- 	", nearby hostiles: " ..
+	-- 	tostring(number_of_hostile_npcs) .. ", nearby monsters: " .. tostring(number_of_monsters) .. ").")
 
 	fear_factor = math.max(fear_factor, (last_actor_fear * 0.7 + fear_factor * 0.3))
 	last_actor_fear = fear_factor
@@ -556,11 +597,11 @@ function get_is_in_safe_space()
 end
 
 function get_is_in_combat()
-	if not agdd_voiced_actor then
+	if not AGDD_voiced_actor then
 		return false
 	end
 
-	return agdd_voiced_actor.is_actor_in_combat() or false
+	return AGDD_voiced_actor.is_actor_in_combat() or false
 end
 
 function get_psy_health()
@@ -607,35 +648,42 @@ function get_number_of_nearby_threats()
 	return { npcs = number_of_hostile_npcs, monsters = number_of_monsters }
 end
 
+-- Cooldowns
+
+function cooldown_for_item_use(section)
+	local kind = ini_sys:r_string_ex(section, "kind")
+
+	if string.match(section, "cig") then
+		kind = "i_tobacco"
+	elseif string.match(section, "bandage") then
+		kind = "i_bandage"
+	end
+
+	local cooldown = ITEM_USE_COOLDOWN_BY_KIND[kind] or opt.item_use_cooldown
+
+	return cooldown
+end
+
 -- Hooks
 
 function hook_functions()
 	actor_effects.Update_Breathing = update_breathing
-	actor_effects.play_sound_breath_mask = play_sound_breath_mask
-	actor_effects.play_sound_breath = play_sound_breath
+	actor_effects.play_sound_breath_mask = function() end
+	actor_effects.play_sound_breath = function() end
 
 	-- Item Use Integration via Actor Effects
 
-	do
-		local original_play_item_fx = actor_effects.play_item_fx
-		function actor_effects.play_item_fx(item)
-			log("Player used item (via play item fx), setting action cooldown time to " ..
-				opt.item_use_cooldown .. "ms.")
-			suspend_next_breathing(opt.item_use_cooldown)
-			original_play_item_fx(item)
-		end
-	end
+	local original_actor_on_item_before_use = itms_manager.actor_on_item_before_use
 
-	-- Item Use Integration via Enhanced Animations
+	function itms_manager.actor_on_item_before_use(obj, flags)
+		original_actor_on_item_before_use(obj, flags)
 
-	if enhanced_animations then
-		local original_start_anim = enhanced_animations.start_anim
-		function enhanced_animations.start_anim(anim_section_hud)
-			log("Player used item (via enhanced animations start anim), setting action cooldown time to " ..
-				opt.item_use_cooldown .. "ms.")
-			suspend_next_breathing(opt.item_use_cooldown)
-			original_start_anim(anim_section_hud)
-		end
+		local section = obj:section()
+		local cooldown = cooldown_for_item_use(section)
+
+		log("Player used item '" ..
+			section .. "' (via items manager on item before use) with cooldown " .. cooldown .. "ms.")
+		suspend_next_breathing(cooldown, SOUND_SUSPENSION_REASON.ACTION)
 	end
 end
 
@@ -653,8 +701,18 @@ function actor_on_before_hit(target_hit, target_bone_id, target_flags)
 	end
 end
 
+function actor_on_equipment_change(obj)
+	local section = obj:section()
+	local cooldown = cooldown_for_item_use(section)
+
+	log("Player used item '" .. section .. "' (via actor_on_equipment_change) with cooldown " .. cooldown .. "ms.")
+	suspend_next_breathing(cooldown, SOUND_SUSPENSION_REASON.ACTION)
+end
+
 function on_game_start()
-	RegisterScriptCallback("actor_on_before_hit", actor_on_before_hit)
+	RegisterScriptCallback("actor_on_before_hit", actor_on_hit)
+	RegisterScriptCallback("actor_item_to_slot", actor_on_equipment_change)
+	RegisterScriptCallback("actor_item_to_ruck", actor_on_equipment_change)
 end
 
 -- Init

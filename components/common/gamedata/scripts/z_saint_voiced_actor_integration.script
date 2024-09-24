@@ -1,6 +1,6 @@
 -- Configuration
 
-local voiced_actor_blacklist = { "fear", "exhausted" }
+local voiced_actor_blacklist = { "exhausted", "fear" }
 local opt = z_saint_actor_breathing.opt
 
 -- State
@@ -13,21 +13,25 @@ local sound_ref = nil
 
 function update_cooldown(cooldown, is_state)
 	if is_state then
-		state_cooldown = time_global() + cooldown
+		state_cooldown = time_global() + (cooldown or 2000)
 	else
-		speaking_cooldown = time_global() + cooldown
+		speaking_cooldown = time_global() + (cooldown or 2000)
 	end
 end
 
 function play_sound(file, sound_volume)
-	if sound_ref then
-		sound_ref:stop()
-	end
-
 	sound_ref = sound_object(file)
 
 	sound_ref:play(db.actor, 0, sound_object.s2d)
 	sound_ref.volume = sound_volume
+end
+
+function current_sound_length()
+	if sound_ref then
+		return sound_ref:length()
+	end
+
+	return 0
 end
 
 function hook_functions()
@@ -58,7 +62,7 @@ function hook_functions()
 		log("Intercepting actor speak call for file '" .. file .. "' Voiced Actor Framework.")
 		local actor = db.actor
 
-		if not actor then
+		if not actor or not actor:alive() then
 			return
 		end
 
@@ -70,18 +74,39 @@ function hook_functions()
 			end
 		end
 
+		if not z_saint_actor_breathing.did_exceed_action_cooldown() and not string.find(file, "death") and not string.find(file, "intimidate") then
+			log("Preventing voiced actor sound '" .. file .. "' playback due to item use cooldowns.")
+			return
+		end
+
 		local health = actor.health
+		local psy_health = arszi_psy.get_psy_health()
+		local is_masked = z_saint_actor_breathing.get_is_masked()
+
+		-- Clamp chance value, some may be excessively high (e.g. 2000 for sanity)
+		chance = clamp(chance or 100, 0, 100)
 
 		-- Alter regular hurt sounds, block above higher health threshold.
-		if string.find(file, "hunger") or string.find(file, "thirst") then
+		if string.find(file, "pain") then
+			sound_volume = opt.speaking_sound_volume
+		elseif string.find(file, "death") then
+			sound_volume = opt.speaking_sound_volume
+		elseif string.find(file, "intimidate") then
+			sound_volume = opt.speaking_sound_volume * 1.8
+		elseif string.find(file, "hunger") or string.find(file, "thirst") then
 			chance = chance / 4
 			sound_volume = opt.body_noises_default_sound_volume
 		elseif string.find(file, "tired") then
 			chance = chance / 4
 			sound_volume = opt.speaking_sound_volume * 0.5
 		elseif string.find(file, "sanity") then
-			chance = chance / 4
-			sound_volume = opt.speaking_sound_volume
+			if psy_health > 0.2 then
+				update_cooldown(cooldown, is_state)
+				return
+			end
+
+			chance = chance / 25
+			sound_volume = opt.speaking_sound_volume * 1.8
 		elseif string.find(file, "hurt") then
 			if health > 0.5 then
 				update_cooldown(cooldown, is_state)
@@ -89,11 +114,6 @@ function hook_functions()
 			end
 
 			chance = chance / 4
-			sound_volume = opt.speaking_sound_volume
-		end
-
-		-- Detect player hit via pain sound call, mark last hit time for simulated adrenaline rush, fix playback volume.
-		if string.find(file, "pain") then
 			sound_volume = opt.speaking_sound_volume
 		end
 
@@ -124,14 +144,32 @@ function hook_functions()
 		end
 
 		-- Fix sounds using masked variant when player is not wearing a mask.
-		if string.find(file, "\\m_") and not z_saint_actor_breathing.get_is_masked() then
+
+		local sound_path_components = split_path_components(file)
+		local sound_file_name = sound_path_components[#sound_path_components]
+		local sound_is_masked = string.find(sound_file_name, "m_") == 1
+
+		if sound_is_masked and not is_masked then
 			log("Fixing masked sound variant for player not wearing a mask in sound file '" .. file .. "'.")
-			file = file:gsub("\\m_", "\\")
+			sound_file_name = sound_file_name:gsub("\\m_", "\\")
+		elseif not sound_is_masked and is_masked then
+			log("Fixing unmasked sound variant for player wearing a mask in sound file '" .. file .. "'.")
+			sound_file_name = "m_" .. sound_file_name
+		end
+
+		sound_path_components[#sound_path_components] = sound_file_name
+		file = table.concat(sound_path_components, "\\")
+
+		local sound_length = current_sound_length()
+		local sound_cooldown = sound_length + 1000
+
+		if is_masked then
+			sound_volume = sound_volume * opt.masked_breathing_sound_coeff
 		end
 
 		log("Muting and suspending breathing, voiced actor sound playback '" ..
-			file .. "', setting cooldown " .. opt.speaking_cooldown .. "ms.")
-		z_saint_actor_breathing.stop_and_suspend_breathing(opt.speaking_cooldown)
+			file .. "', setting cooldown to " .. sound_cooldown .. "ms (via sound length " .. sound_length .. "ms.")
+		z_saint_actor_breathing.stop_and_suspend_breathing(sound_cooldown)
 
 		play_sound(file, sound_volume)
 		update_cooldown(cooldown, is_state)
@@ -152,6 +190,16 @@ function log(message)
 	end
 
 	printf("SAB/VAI - " .. message)
+end
+
+function split_path_components(path)
+	-- Split the path by backslash
+	local components = {}
+	for component in string.gmatch(path, "[^\\]+") do
+		table.insert(components, component)
+	end
+
+	return components
 end
 
 -- Init
