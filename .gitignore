@@ -1,5 +1,6 @@
 # Archived Files
-archive/*
+/archive/*
+/gamedata/*
 
 # X-Ray OGG Comment Utility
 SAVandT.exe

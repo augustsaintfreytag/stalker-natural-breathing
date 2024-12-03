@@ -1,0 +1,68 @@
+local opt = z_saint_actor_breathing.opt
+
+function ui_addon_companion_quick_menu.on_key_press(key)
+	local bind = dik_to_bind(key)
+
+	if bind ~= key_bindings.kCUSTOM18 then
+		return
+	end
+
+	local faction = get_actor_true_community()
+
+	if faction == "isg" or faction == "killer" then
+		ui_addon_companion_quick_menu.lang = "_eng"
+	else
+		ui_addon_companion_quick_menu.lang = ""
+	end
+
+	if z_saint_actor_breathing.get_is_masked() then
+		ui_addon_companion_quick_menu.muffle = "m_"
+	else
+		ui_addon_companion_quick_menu.muffle = ""
+	end
+
+	if math.random() > 0.8 then
+		AGDD_voiced_actor.actor_speak(
+			"characters_voice\\player" ..
+			ui_addon_companion_quick_menu.lang ..
+			"\\" .. ui_addon_companion_quick_menu.muffle .. "command_start_" .. math.random(4), opt
+			.speaking_sound_volume, 1000, 100,
+			true,
+			false, false, false)
+
+		if AGDD_voiced_actor.is_actor_in_combat() ~= true then
+			AGDD_voiced_actor.actor_speak(
+				"characters_voice\\player" ..
+				ui_addon_companion_quick_menu.lang ..
+				"\\" .. ui_addon_companion_quick_menu.muffle .. "command_cancel_" .. math.random(3),
+				opt.speaking_sound_volume, 1000,
+				100,
+				true, false, false, false)
+		end
+	end
+end
+
+function ui_addon_companion_quick_menu.addonCompanionsContextMenu:ExecuteScriptByCondition(info, true_script,
+																						   false_script, true_file,
+																						   false_file)
+	printf("SVACCI - Executing script by condition '" .. info .. "'.")
+
+	if (self:DoesSquadHaveInfo(info)) then
+		alun_utils.execute_script_on_squad(self.companionSquad, true_script)
+
+		printf("SVACCI - Playing sound file via companion quick menu script exec. '" .. true_file .. "'.")
+		AGDD_voiced_actor.actor_speak(true_file, opt.speaking_sound_volume, 2000, 100, true, true, false, false)
+	else
+		alun_utils.execute_script_on_squad(self.companionSquad, false_script)
+
+		printf("SVACCI - Playing sound file via companion quick menu script exec. '" .. false_file .. "'.")
+		AGDD_voiced_actor.actor_speak(false_file, opt.speaking_sound_volume, 2000, 100, true, true, false, false)
+	end
+end
+
+function axr_companions.UIWheelCompanion:PlaySoundFile(file, sound_volume)
+	printf("SVACCI - Playing sound file via UIWheelCompanion '" .. file .. "'.")
+	AGDD_voiced_actor.actor_speak(file, opt.speaking_sound_volume, 2000, 100, true, true, false, false)
+end
+
+printf("SVACCI - Patched companion command integration.")
