@@ -7,13 +7,8 @@ function ui_addon_companion_quick_menu.on_key_press(key)
 		return
 	end
 
-	local faction = get_actor_true_community()
-
-	if faction == "isg" or faction == "killer" then
-		ui_addon_companion_quick_menu.lang = "_eng"
-	else
-		ui_addon_companion_quick_menu.lang = ""
-	end
+	AGDD_voiced_actor.get_actor_lang()
+	ui_addon_companion_quick_menu.lang = AGDD_voiced_actor.lang
 
 	if z_saint_actor_breathing.get_is_masked() then
 		ui_addon_companion_quick_menu.muffle = "m_"
