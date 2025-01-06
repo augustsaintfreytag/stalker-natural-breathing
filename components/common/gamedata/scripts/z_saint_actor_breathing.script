@@ -151,9 +151,9 @@ function init_options()
 	opt.body_noises_default_sound_volume = 0.6
 
 	opt.item_use_cooldown = 2000
-	opt.fear_factor_npc_detection_radius = 50
 	opt.hit_distress_cooldown = 12000
 	opt.residuality_time = 10000
+	opt.fear_factor_npc_detection_radius = 35
 
 	opt.breathing_sound_volume = 0.4
 	opt.breathing_sound_volume_jitter = 0.15
