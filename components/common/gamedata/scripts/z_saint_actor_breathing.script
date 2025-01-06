@@ -8,7 +8,7 @@ local SOUND_KIND = {
 	STAMINA_RELATED_SWEETENER = "run_s",
 	WEATHER_RAIN_SWEETENER = "weather_rain",
 	HALLUCINATIONS = "hallucinations",
-	TINNITUS = "tinnitus",
+	TINNITUS = "tinnitus"
 }
 
 local SOUND_REGULAR_BREATH_MODE = {
@@ -78,8 +78,8 @@ local sound_index_by_kind = {}
 local num_sounds_by_kind = {
 	[SOUND_KIND.REGULAR] = 8,
 	[SOUND_KIND.FEAR_SWEETENER] = 8,
-	[SOUND_KIND.HEALTH_RELATED] = 8,
-	[SOUND_KIND.STAMINA_RELATED] = 6,
+	[SOUND_KIND.HEALTH_RELATED] = 12,
+	[SOUND_KIND.STAMINA_RELATED] = 8,
 	[SOUND_KIND.STAMINA_RELATED_SWEETENER] = 7,
 	[SOUND_KIND.WEATHER_RAIN_SWEETENER] = 5,
 	[SOUND_KIND.HALLUCINATIONS] = 5,
@@ -120,7 +120,7 @@ end
 -- Init
 
 function init_options()
-	opt.debug_mode = true
+	opt.debug_mode = false
 
 	opt.speed = {}
 
@@ -143,7 +143,7 @@ function init_options()
 
 	opt.cam_dist = ini_eff:r_float_ex("settings", "cam_dist") or 4
 
-	opt.speaking_cooldown = 3000
+	opt.speaking_cooldown = 2000
 	opt.speaking_sound_volume = 1.4
 
 	opt.extra_sound_volume = 0.5
@@ -151,15 +151,15 @@ function init_options()
 	opt.body_noises_default_sound_volume = 0.6
 
 	opt.item_use_cooldown = 2000
-	opt.hit_distress_cooldown = 6000
-	opt.residuality_time = 8000
-	opt.fear_factor_npc_detection_radius = 50
+	opt.hit_distress_cooldown = 12000
+	opt.residuality_time = 10000
+	opt.fear_factor_npc_detection_radius = 35
 
 	opt.breathing_sound_volume = 0.4
 	opt.breathing_sound_volume_jitter = 0.15
 	opt.breathing_sound_pitch_jitter = 0.05
 
-	opt.masked_breathing_sound_coeff = 1.25
+	opt.masked_breathing_sound_coeff = 1.35
 
 	opt.enable_breathing_sound = ui_options.get("sound/environment/breathing_sound")
 end
@@ -295,7 +295,7 @@ function handle_breathing_cycle(actor)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.TINNITUS, sound_index)
 	elseif fear_factor > 0.5 and math.random() > 0.95 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
-		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		local sound_index = tick_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
 		log("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
@@ -376,7 +376,7 @@ function handle_breathing_cycle(actor)
 	local weather_kind = get_weather_kind()
 	if (not get_is_masked()) and (not get_is_in_safe_space()) and get_is_raining() and (math.random() > 0.97) then
 		-- If it's raining or storming, play rain-related sweeteners.
-		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
+		local sound_index = tick_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
 			.REGULAR, true)
 		log("Playing rain-related sweetener sound with weather " ..
@@ -589,7 +589,9 @@ function get_is_night()
 end
 
 function get_is_underground()
-	return GetEvent("underground")
+	-- return GetEvent("underground")
+	-- Disabled because underground check is abused for safe zone check.
+	return false
 end
 
 function get_is_in_safe_space()
@@ -660,7 +662,6 @@ function cooldown_for_item_use(section)
 	end
 
 	local cooldown = ITEM_USE_COOLDOWN_BY_KIND[kind] or opt.item_use_cooldown
-
 	return cooldown
 end
 
@@ -710,7 +711,7 @@ function actor_on_equipment_change(obj)
 end
 
 function on_game_start()
-	RegisterScriptCallback("actor_on_before_hit", actor_on_hit)
+	RegisterScriptCallback("actor_on_before_hit", actor_on_before_hit)
 	RegisterScriptCallback("actor_item_to_slot", actor_on_equipment_change)
 	RegisterScriptCallback("actor_item_to_ruck", actor_on_equipment_change)
 end
