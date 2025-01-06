@@ -120,7 +120,7 @@ end
 -- Init
 
 function init_options()
-	opt.debug_mode = true
+	opt.debug_mode = false
 
 	opt.speed = {}
 
