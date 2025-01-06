@@ -57,6 +57,18 @@ local ITEM_USE_COOLDOWN_BY_KIND = {
 	["o_helmet"] = 5000
 }
 
+local UNDERGROUND_LEVELS = {
+	["jupiter_underground"] = true,
+	["l03u_agr_underground"] = true,
+	["l04u_labx18"] = true,
+	["l08u_brainlab"] = true,
+	["l10u_bunker"] = true,
+	["l12u_control_monolith"] = true,
+	["l12u_sarcofag"] = true,
+	["l13u_warlab"] = true,
+	["labx8"] = true,
+}
+
 -- State
 
 opt = {}
@@ -589,9 +601,8 @@ function get_is_night()
 end
 
 function get_is_underground()
-	-- return GetEvent("underground")
-	-- Disabled because underground check is abused for safe zone check.
-	return false
+	local level_name = level.name()
+	return UNDERGROUND_LEVELS[level_name] or false
 end
 
 function get_is_in_safe_space()
