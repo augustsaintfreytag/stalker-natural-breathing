@@ -295,7 +295,7 @@ function handle_breathing_cycle(actor)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.TINNITUS, sound_index)
 	elseif fear_factor > 0.5 and math.random() > 0.95 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
-		local sound_index = random_sound_index(SOUND_KIND.HALLUCINATIONS)
+		local sound_index = tick_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
 		log("Playing fear-related hallucinations extra sound with factor " ..
 			fear_factor .. " and random index " .. tostring(sound_index) .. ".")
@@ -376,7 +376,7 @@ function handle_breathing_cycle(actor)
 	local weather_kind = get_weather_kind()
 	if (not get_is_masked()) and (not get_is_in_safe_space()) and get_is_raining() and (math.random() > 0.97) then
 		-- If it's raining or storming, play rain-related sweeteners.
-		local sound_index = random_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
+		local sound_index = tick_sound_index(SOUND_KIND.WEATHER_RAIN_SWEETENER)
 		play_sound_with_parameters(actor, SOUND_KIND.WEATHER_RAIN_SWEETENER, nil, sound_index, SOUND_PAUSE_FACTOR
 			.REGULAR, true)
 		log("Playing rain-related sweetener sound with weather " ..
