@@ -589,7 +589,9 @@ function get_is_night()
 end
 
 function get_is_underground()
-	return GetEvent("underground")
+	-- return GetEvent("underground")
+	-- Disabled because underground check is abused for safe zone check.
+	return false
 end
 
 function get_is_in_safe_space()
