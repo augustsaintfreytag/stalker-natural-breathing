@@ -660,7 +660,6 @@ function cooldown_for_item_use(section)
 	end
 
 	local cooldown = ITEM_USE_COOLDOWN_BY_KIND[kind] or opt.item_use_cooldown
-
 	return cooldown
 end
 
@@ -710,7 +709,7 @@ function actor_on_equipment_change(obj)
 end
 
 function on_game_start()
-	RegisterScriptCallback("actor_on_before_hit", actor_on_hit)
+	RegisterScriptCallback("actor_on_before_hit", actor_on_before_hit)
 	RegisterScriptCallback("actor_item_to_slot", actor_on_equipment_change)
 	RegisterScriptCallback("actor_item_to_ruck", actor_on_equipment_change)
 end
