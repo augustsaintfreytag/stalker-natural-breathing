@@ -1,6 +1,6 @@
 -- Configuration
 
-local voiced_actor_blacklist = { "exhausted", "fear" }
+local voiced_actor_blacklist = { "exhausted", "fear", "sanity" }
 local opt = z_saint_actor_breathing.opt
 
 -- State
