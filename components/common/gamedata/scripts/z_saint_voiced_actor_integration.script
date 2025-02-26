@@ -19,7 +19,7 @@ function update_cooldown(cooldown, is_state)
 	end
 end
 
-function play_sound(file, sound_volume)
+function play_step_sound(file, sound_volume)
 	sound_ref = sound_object(file)
 
 	sound_ref:play(db.actor, 0, sound_object.s2d)
@@ -99,14 +99,6 @@ function hook_functions()
 		elseif string.find(file, "tired") then
 			chance = chance / 4
 			sound_volume = opt.speaking_sound_volume * 0.5
-		elseif string.find(file, "sanity") then
-			if psy_health > 0.2 then
-				update_cooldown(cooldown, is_state)
-				return
-			end
-
-			chance = chance / 25
-			sound_volume = opt.speaking_sound_volume * 1.8
 		elseif string.find(file, "hurt") then
 			if health > 0.25 then
 				update_cooldown(cooldown, is_state)
@@ -171,7 +163,7 @@ function hook_functions()
 			file .. "', setting cooldown to " .. sound_cooldown .. "ms (via sound length " .. sound_length .. "ms.")
 		z_saint_actor_breathing.stop_and_suspend_breathing(sound_cooldown)
 
-		play_sound(file, sound_volume)
+		play_step_sound(file, sound_volume)
 		update_cooldown(cooldown, is_state)
 	end
 
