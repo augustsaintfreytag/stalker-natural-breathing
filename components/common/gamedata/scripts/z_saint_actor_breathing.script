@@ -84,6 +84,7 @@ local last_actor_fear = 0
 local sound_action_cooldown_time = 0
 
 local sound_object_ref = nil
+local extra_sound_object_ref = nil
 
 local sound_index_by_kind = {}
 
@@ -436,9 +437,13 @@ function play_sound_sweetener_with_parameters(actor, kind, index, pause_factor)
 end
 
 function play_extra_sound_with_parameters(actor, kind, index)
+	if extra_sound_object_ref and extra_sound_object_ref:playing() then
+		return
+	end
+
 	local sound_path = "actor\\" .. kind .. "_" .. index
 
-	local extra_sound_object_ref = sound_object(sound_path)
+	extra_sound_object_ref = sound_object(sound_path)
 	extra_sound_object_ref:play(actor, 0, sound_object.s2d)
 	extra_sound_object_ref.volume = opt.extra_sound_volume
 end
