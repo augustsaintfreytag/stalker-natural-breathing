@@ -52,9 +52,9 @@ local ITEM_USE_COOLDOWN_BY_KIND = {
 	["i_tobacco"] = 11000,
 	["i_drink"] = 11000,
 	["i_food"] = 8000,
-	["i_medical"] = 9000,
+	["i_medical"] = 10000,
 	["i_bandage"] = 5000,
-	["o_helmet"] = 5000
+	["o_helmet"] = 5500
 }
 
 local UNDERGROUND_LEVELS = {
