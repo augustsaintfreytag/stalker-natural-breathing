@@ -248,7 +248,7 @@ function handle_breathing_cycle(actor)
 	-- Residual Sound
 
 	-- If fear is high, health is low, or stamina is low, clear residual sound
-	if fear_factor > 0.9 or health < 0.2 or stamina < 0.2 then
+	if fear_factor > 0.9 or health < 0.25 or stamina < 0.2 then
 		log("Clearing all residual sounds, extreme circumstances (fear factor: " .. fear_factor .. ", health: " ..
 			health .. ", stamina: " .. stamina .. ").")
 		sound_residual_cooldown_by_kind = {}
@@ -285,8 +285,8 @@ function handle_breathing_cycle(actor)
 
 	-- Health
 
-	if health <= opt.health.level2 then
-		if health <= opt.health.level1 and math.random() > 0.75 then
+	if health < 0.25 then
+		if math.random() > 0.5 then
 			-- Player is critically wounded, play sweetener.
 			local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 			play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index,
@@ -301,12 +301,14 @@ function handle_breathing_cycle(actor)
 		return
 	end
 
-	-- Fear Sweeteners
+	-- Fear Extra Sounds
 
-	if fear_factor > 0.5 and psy_health < 0.2 and math.random() > 0.75 then
+	if psy_health < 0.3 then
 		local sound_index = random_sound_index(SOUND_KIND.TINNITUS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.TINNITUS, sound_index)
-	elseif fear_factor > 0.5 and math.random() > 0.95 then
+	end
+
+	if fear_factor > 0.5 and math.random() > 0.95 then
 		-- If fear is moderate and psy health is lowered, play hallucinations with a chance.
 		local sound_index = tick_sound_index(SOUND_KIND.HALLUCINATIONS)
 		play_extra_sound_with_parameters(actor, SOUND_KIND.HALLUCINATIONS, sound_index)
@@ -316,7 +318,7 @@ function handle_breathing_cycle(actor)
 
 	-- Moderate Fear
 
-	if fear_factor > 0.5 and math.random() > 0.9 then
+	if fear_factor > 0.3 and fear_factor < 0.7 and math.random() > 0.75 then
 		-- High distress, play fear sweetener.
 		local sound_index = tick_sound_index(SOUND_KIND.FEAR_SWEETENER)
 		play_sound_sweetener_with_parameters(actor, SOUND_KIND.FEAR_SWEETENER, sound_index, SOUND_PAUSE_FACTOR
